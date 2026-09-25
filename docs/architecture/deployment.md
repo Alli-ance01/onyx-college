@@ -7,7 +7,7 @@ The recommended initial topology is:
 | Concern          | Recommended service                        | Notes                                                             |
 | ---------------- | ------------------------------------------ | ----------------------------------------------------------------- |
 | Web application  | Vercel static hosting                      | Versioned SPA build, CDN, HTTPS, fallback rewrite to `index.html` |
-| API              | Render web service                         | Long-running Node.js process, health checks, controlled deploys   |
+| API              | Render web service                         | Long-running Node.js `22.19.0` process, health checks, controlled deploys |
 | Database         | MongoDB Atlas replica set                  | Transactions, backups, monitoring, network controls               |
 | Object storage   | Cloudflare R2                              | Private S3-compatible bucket/prefixes and presigned access        |
 | Error monitoring | Sentry when approved                       | Backend/frontend releases and redacted errors                     |
@@ -36,7 +36,7 @@ The monorepo initially produces independently deployable web and API artifacts f
 
 Recommended pipeline:
 
-1. deterministic workspace install from the committed lockfile;
+1. select Node.js `22.19.0` from the repository runtime pins, then perform a deterministic workspace install from the committed lockfile;
 2. lint, type-check, unit/domain/component tests;
 3. integration tests against a MongoDB replica set;
 4. production builds and vulnerability/secret scanning;
@@ -98,7 +98,7 @@ The following categories are expected, subject to a current-version/security rev
 
 - workspace/build: pnpm, TypeScript, Vite;
 - web: React, React DOM, React Router, TanStack Query, React Hook Form, Zod, accessible headless primitives, styling utilities;
-- API: Node.js LTS, Express, Mongoose/MongoDB driver, Zod;
+- API: Node.js `22.19.0`, Express, Mongoose/MongoDB driver, Zod;
 - security: `jose`, Argon2, Helmet, CORS/rate-limit support, secure randomness from Node;
 - correctness: `decimal.js` or equivalent decimal library;
 - deferred storage/jobs/PDF feature dependencies: AWS S3-compatible SDK, a MongoDB-backed outbox/job implementation, Playwright/Chromium, file-signature detection and an approved malware scanner;

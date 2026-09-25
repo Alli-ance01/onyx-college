@@ -6,6 +6,10 @@ allowBuilds:
   # Vite's compiler binary requires its official platform-install script.
   esbuild: true
 
+overrides:
+  # Vitest exposes jsdom as an optional peer; keep every resolved test peer on the Node 22.19-compatible line.
+  jsdom: 29.0.1
+
 catalog:
   '@eslint/js': 10.0.1
   '@hookform/resolvers': 5.9.1
@@ -15,7 +19,7 @@ catalog:
   '@types/cookie-parser': 1.4.10
   '@types/cors': 2.8.19
   '@types/express': 5.0.6
-  '@types/node': 24.13.6
+  '@types/node': 22.19.21
   '@types/react': 19.3.0
   '@types/react-dom': 19.3.0
   '@types/supertest': 7.2.1
@@ -31,7 +35,7 @@ catalog:
   express: 5.2.1
   globals: 17.12.0
   helmet: 8.3.0
-  jsdom: 30.1.1
+  jsdom: 29.0.1
   mongoose: 9.10.2
   pino: 10.3.1
   pino-http: 11.0.0
@@ -39,7 +43,7 @@ catalog:
   react: 19.3.0
   react-dom: 19.3.0
   react-hook-form: 7.88.0
-  react-router: 8.4.0
+  react-router: 7.18.4
   supertest: 7.3.0
   tsx: 4.23.15
   typescript: 6.0.3

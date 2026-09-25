@@ -6,6 +6,8 @@ This document defines the production architecture for V1. It does not change the
 
 The design optimizes for a school-scale production system: explicit domain boundaries, strong data integrity, simple operations, and room to grow without introducing distributed-system complexity prematurely.
 
+The repository, local development, CI, builds, and deployed Node.js processes use Node.js `22.19.0`. Runtime upgrades are explicit repository decisions and must update the version pins, package engines, dependency compatibility review, and delivery configuration together.
+
 ## Repository structure
 
 The repository will use a `pnpm` workspace without Nx or Turborepo:

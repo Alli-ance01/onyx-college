@@ -26,7 +26,7 @@ Start with [the product specification](docs/product/product-spec.md), then read 
 
 ### Prerequisites
 
-- Node.js `24.21.0` (the supported Node 24 LTS line is pinned in `.nvmrc` and `.node-version`)
+- Node.js `22.19.0` (pinned in `.nvmrc`, `.node-version`, and workspace package engines)
 - pnpm `12.6.0` through Corepack or an equivalent project-local invocation
 - MongoDB for API startup; production and transaction-focused integration environments require replica-set behavior
 

@@ -147,7 +147,7 @@ Startup validates environment, refuses unsafe production defaults, and checks th
 ## Dependency and supply-chain security
 
 - Commit the workspace lockfile and use deterministic CI installs.
-- Pin runtime versions and use currently supported Node.js LTS.
+- Pin Node.js `22.19.0` consistently for local development, CI, builds, and production; dependency updates must remain compatible with that runtime.
 - Review direct dependencies for maintenance, license, and necessity.
 - Run vulnerability and secret scanning in CI; triage findings rather than applying unsafe blind upgrades.
 - Enable automated dependency update proposals with tests and review.

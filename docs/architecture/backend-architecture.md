@@ -245,7 +245,7 @@ The global error boundary logs internal details once with redaction. Production 
 
 ## Expected backend dependencies
 
-The implementation is expected to evaluate current stable releases of Node.js LTS, Express, Mongoose/the MongoDB driver, Zod, `jose`, Argon2, `decimal.js`, Pino, Helmet, an S3-compatible SDK, and OpenTelemetry or Sentry adapters only as needed. Libraries are selected and pinned during implementation after compatibility and maintenance review; this document does not install them.
+The backend runs on the repository-standard Node.js `22.19.0` runtime. The implementation is expected to evaluate compatible stable releases of Express, Mongoose/the MongoDB driver, Zod, `jose`, Argon2, `decimal.js`, Pino, Helmet, an S3-compatible SDK, and OpenTelemetry or Sentry adapters only as needed. Libraries are selected and pinned during implementation after compatibility and maintenance review; this document does not install them.
 
 ## References
 
