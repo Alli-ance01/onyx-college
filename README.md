@@ -6,14 +6,9 @@ The product covers student onboarding and approval, historical academic enrollme
 
 ## Repository status
 
-Implementation has not started. This repository currently contains the authoritative product and domain documentation that must guide later architecture and implementation work.
+The production workspace foundation is implemented. It contains the React application shell, Express API shell, MongoDB connection lifecycle, shared transport contracts, strict TypeScript/lint/format tooling, and focused foundation tests. Product features and authentication have not started.
 
-There is currently:
-
-- no initialized frontend or backend application;
-- no package manifest or installed application dependencies;
-- no database schema, API route, handler, or UI component; and
-- no approved external visual design.
+There are currently no business-domain Mongoose models, product feature modules, authentication workflows, storage/email integrations, background worker, or approved external visual design.
 
 The eventual initial interface should be production-quality, but product rules, security, data integrity, historical correctness, and maintainable domain boundaries take priority over visual design.
 
@@ -21,11 +16,50 @@ The eventual initial interface should be production-quality, but product rules, 
 
 - `docs/product/` defines product scope, portal behavior, user journeys, and role capabilities.
 - `docs/domain/` defines canonical entities, academic structure, workflows, invariants, and authorization rules.
-- `docs/architecture/` is reserved for approved system, backend, frontend, and security architecture decisions. It has not yet been populated.
-- `docs/api/` is reserved for API conventions. It has not yet been populated.
+- `docs/architecture/` defines the system, backend, frontend, security, testing, deployment, implementation-phase, and architectural-decision guidance.
+- `docs/api/` defines the versioned HTTP API conventions.
 - `assets/branding/` contains supplied brand assets.
 
-Start with [the product specification](docs/product/product-spec.md), then read the relevant workflow and domain documents before proposing architecture or writing code. Repository-wide contributor constraints are in [AGENTS.md](AGENTS.md).
+Start with [the product specification](docs/product/product-spec.md), then read the relevant workflow, domain, and architecture documents before writing code. Repository-wide contributor constraints are in [AGENTS.md](AGENTS.md).
+
+## Development setup
+
+### Prerequisites
+
+- Node.js `24.21.0` (the supported Node 24 LTS line is pinned in `.nvmrc` and `.node-version`)
+- pnpm `12.6.0` through Corepack or an equivalent project-local invocation
+- MongoDB for API startup; production and transaction-focused integration environments require replica-set behavior
+
+Do not install pnpm globally. From the repository root, enable the package manager supplied with Node and install the workspace:
+
+```sh
+corepack enable
+pnpm install
+```
+
+Copy the example environment files without committing the resulting `.env` files:
+
+```powershell
+Copy-Item apps/api/.env.example apps/api/.env
+Copy-Item apps/web/.env.example apps/web/.env
+```
+
+Update `MONGODB_URI` and `WEB_ORIGIN` for the local environment. `TRUST_PROXY_HOPS` remains `0` locally and must be configured to match the reviewed production proxy topology. Browser-visible configuration uses only `VITE_*` values; backend secrets must never use that prefix.
+
+### Commands
+
+```sh
+pnpm dev
+pnpm build
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm format:check
+```
+
+`pnpm dev` runs the API and web application together. Workspace-specific commands are also available, for example `pnpm --filter @onyx/api test` and `pnpm --filter @onyx/web dev`.
+
+The API exposes `GET /api/v1/health/live` for process liveness and `GET /api/v1/health/ready` for dependency readiness. The web application defaults to the relative `/api/v1` base path and the development server proxies `/api` to the local API. Deployed API origins are supplied through `VITE_API_BASE_URL`.
 
 ## V1 boundary
 

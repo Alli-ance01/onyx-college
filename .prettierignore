@@ -1,0 +1,8 @@
+node_modules
+dist
+coverage
+.git
+pnpm-lock.yaml
+assets
+docs
+AGENTS.md

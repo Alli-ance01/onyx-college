@@ -1,0 +1,32 @@
+{
+  "name": "onyx-college-portal",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.6.0",
+  "engines": {
+    "node": ">=24.0.0 <25",
+    "pnpm": ">=12.6.0 <13"
+  },
+  "scripts": {
+    "dev": "concurrently --kill-others-on-fail --names api,web --prefix-colors blue,magenta \"pnpm --filter @onyx/api dev\" \"pnpm --filter @onyx/web dev\"",
+    "build": "pnpm --recursive --workspace-concurrency=1 build",
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "pnpm --recursive --workspace-concurrency=1 typecheck",
+    "test": "pnpm --recursive --workspace-concurrency=1 --if-present test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@eslint/js": "catalog:",
+    "concurrently": "catalog:",
+    "eslint": "catalog:",
+    "eslint-config-prettier": "catalog:",
+    "eslint-plugin-react-hooks": "catalog:",
+    "eslint-plugin-react-refresh": "catalog:",
+    "globals": "catalog:",
+    "prettier": "catalog:",
+    "typescript": "catalog:",
+    "typescript-eslint": "catalog:"
+  }
+}
