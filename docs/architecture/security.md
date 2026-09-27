@@ -26,9 +26,9 @@ The SPA stores the access token in memory and sends it as `Authorization: Bearer
 
 ### Refresh sessions
 
-Refresh credentials are opaque cryptographically random values. The browser receives the value only in an `HttpOnly`, `Secure`, `SameSite=Lax` cookie scoped narrowly to the refresh/logout path and API host. MongoDB stores only a keyed hash of the token, never the bearer value.
+Refresh credentials are opaque cryptographically random values. The browser receives the value only in an `HttpOnly`, `Secure` in production, `SameSite=Lax` cookie scoped to `/api/v1/auth` on the API host. MongoDB stores only a keyed hash of the token, never the bearer value.
 
-Every refresh rotates the credential. AuthSession tracks token family, current hash, user, device label, creation/use timestamps, expiry, revocation, and reuse evidence. Reuse of an already rotated token revokes the whole family and creates a security audit event. Parallel browser refreshes are coordinated by the client; the server still handles races safely with a conditional update.
+Every refresh rotates the credential. AuthSession tracks token family, current hash, immediately previous hash, user, device label, creation/use timestamps, expiry, revocation, and reuse evidence. The client uses a single in-tab promise and the Web Locks API when available to serialize refresh across tabs. The server uses a conditional rotation and a short, configured grace window: same-browser concurrent use of the immediately previous token returns `AUTH_REFRESH_RETRY` without revocation, while reuse outside that grace revokes the session and creates a security audit event. Unknown token material never revokes a session merely because it contains a valid-looking session ID.
 
 Users can view approximate active-device sessions and revoke one or all. Device labels and coarse activity metadata are informational, not authentication factors. Logout revokes the current session and clears the cookie; logout-all revokes every active family.
 
@@ -57,7 +57,7 @@ There is no public teacher signup. Invitation tokens are random, single-use, sho
 
 There is no public administrator signup. Authorized administrators create other administrators only with the required permission and constraints; ordinary roles cannot modify the protected SUPER_ADMIN role.
 
-The first SUPER_ADMIN is created by a server-side one-time bootstrap command, never an HTTP endpoint. It executes transactionally, checks a durable bootstrap marker and existing protected administrator, assigns the exact SUPER_ADMIN role, and refuses ordinary repetition. A high-entropy temporary credential is displayed or delivered once, never logged or persisted in plaintext, and requires change on first login. Bootstrap invocation and outcome are audited without the credential. Exact CLI ergonomics are deferred to implementation.
+The first SUPER_ADMIN is created by the interactive server-side `pnpm bootstrap:super-admin` command, never an HTTP endpoint. It first synchronizes canonical access control, executes creation transactionally, checks a durable bootstrap marker and existing protected administrator, assigns the exact SUPER_ADMIN role, and refuses ordinary repetition. A high-entropy temporary credential is displayed once, never accepted as a command-line argument, logged, or persisted in plaintext, and requires change on first login. Successful bootstrap is audited without the credential.
 
 ### Password reset
 
@@ -111,20 +111,21 @@ Updates specify allowed fields rather than spreading request bodies. Internal st
 
 ## File-upload security
 
-MongoDB stores file metadata only. The preferred R2 storage flow is:
+MongoDB stores file metadata only. Cloudinary is accessed exclusively through the server-side storage port; the Cloudinary API secret and signing credentials never enter the browser bundle. The implemented student-document flow is:
 
-1. An authorized client requests an upload intent with declared purpose, filename, size, and type.
-2. The API validates requirement, scope, extension/type allowlist, and purpose-specific limit, creates a short-lived intent and quarantine key, then returns a presigned PUT URL.
-3. The client uploads directly with the signed constraints.
-4. The client completes the intent; the API/worker verifies object existence, exact size, checksum where supported, extension, declared MIME, and detected magic bytes.
-5. Malware scanning completes before the object becomes downloadable or counts as a verified document.
-6. The metadata transitions to available/rejected, and the temporary object is retained or purged according to policy.
+1. An authenticated client sends a bounded raw JPEG, PNG, or PDF body for a specific active document requirement.
+2. The API authorizes ownership or the required document permission and validates the requirement, declared MIME type, purpose-specific limit, exact body size, and detected file signature.
+3. The API uploads the validated body with an opaque provider public ID and Cloudinary `authenticated` delivery. It verifies resource type, delivery type, public ID, format when returned, and byte count in the provider response.
+4. Only after a successful provider response does MongoDB record the asset metadata as available. If metadata persistence fails, the application attempts compensating provider deletion; unresolved cleanup is an observable operational exception, not a silently valid document.
+5. A protected read rechecks current authorization and resource state, then returns a short-lived signed URL. The development local adapter instead uses the same authorized API path and never makes its filesystem path public.
 
-Original filenames are display metadata after control-character removal; they are never object keys. Object keys use random IDs and fixed safe extensions. SVG, HTML, executable content, and archive formats are denied unless a future reviewed use case requires them. Limits vary by passport image, identity document, assignment attachment, and school asset and are configured server-side.
+Original filenames are sanitized display metadata; they are never object identifiers. Logical keys use random IDs and fixed safe extensions. SVG, HTML, executable content, and archive formats are denied unless a future reviewed use case requires them. Limits vary by passport image, identity document, future assignment attachment, and school asset and are configured server-side.
 
-Private student documents and report PDFs remain in private buckets/prefixes. Each download request rechecks authorization and returns a very short-lived signed GET URL with safe content disposition. Signed URLs are bearer credentials and are never written to application logs. School logos may be public only after explicit classification.
+Private student documents use authenticated Cloudinary delivery. A signed URL is a temporary bearer credential: it receives a short expiry, is returned only after backend authorization, is never written to application logs or persisted in resource DTOs, and is excluded from shared caches and future service-worker caches. School logos may use public delivery only after explicit classification and separation from protected documents.
 
-Replacement creates a new object/version and metadata link; it never overwrites evidence silently. Deletion is delayed and auditable. A worker cleans expired upload intents, rejected quarantine objects, and database-unreferenced objects after a safety window. Object removal is idempotent.
+Replacement creates a new provider asset and metadata version; it never overwrites evidence silently. Removal moves metadata to a pending state, issues an exact provider delete using the stored resource and delivery types, and records completion. Provider calls remain outside MongoDB transactions; failures remain visible and retryable. There is no cleanup worker yet. A future orphan-reconciliation job may be added only when a concrete requirement justifies the deferred worker.
+
+Cloudinary does not by itself establish malware safety. A scanning approach and quarantine policy remain production-launch decisions before broad intake of untrusted PDFs or future attachment types.
 
 ## Sensitive data
 
@@ -140,7 +141,7 @@ Audit diffs are allowlisted by action. Security-relevant audits include bootstra
 
 ## Secrets and production configuration
 
-Secrets are injected by the deployment platform or managed secret store. Separate credentials are used for development, test, staging if introduced, and production. Database users follow least privilege; the runtime account cannot administer the cluster. Object-storage keys are scoped to required buckets/actions. Signing keys, refresh pepper, storage credentials, and monitoring keys have documented rotation procedures.
+Secrets are injected by the deployment platform or managed secret store. Separate credentials are used for development, test, staging if introduced, and production. Database users follow least privilege; the runtime account cannot administer the cluster. Cloudinary credentials are restricted to the backend, isolated by environment/cloud account where available, and never exposed as frontend configuration or unrestricted upload credentials. Signing keys, refresh pepper, storage credentials, and monitoring keys have documented rotation procedures.
 
 Startup validates environment, refuses unsafe production defaults, and checks that cookie, origin, issuer/audience, storage, and database settings are coherent. `.env` files with real values are not committed. Frontend environment values are public by definition and must contain no secrets.
 
@@ -164,4 +165,6 @@ Security acceptance includes authorization matrix tests, object-level access tes
 - [OWASP Session Management Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html)
 - [OWASP Cross-Site Request Forgery Prevention Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html)
 - [OWASP File Upload Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html)
-- [Cloudflare R2 presigned URL security](https://developers.cloudflare.com/r2/api/s3/presigned-urls/)
+- [Cloudinary access-controlled media](https://cloudinary.com/documentation/control_access_to_media)
+- [Cloudinary upload security](https://cloudinary.com/documentation/upload_images)
+- [Cloudinary asset deletion](https://cloudinary.com/documentation/delete_assets)

@@ -176,7 +176,7 @@ If a cohort cannot fit safely in one bounded publication transaction, the system
 
 Session state, term state, SchoolSettings pointers, audit, and outbox records commit together. The command requires an expected version and privileged permission.
 
-External calls are never made while a transaction is open. Object storage, email, PDF rendering, and future push delivery are coordinated afterward through the durable outbox.
+External calls are never made while a transaction is open. The current bounded document upload, replacement, and removal operations coordinate Cloudinary calls outside MongoDB transactions using explicit metadata lifecycle states, verified provider responses, compensating cleanup, and idempotent retry. Effects that must be delivered after an authoritative business commit—such as email, PDF rendering, future push delivery, or later storage cleanup—are recorded in the durable outbox and remain unprocessed until a concrete worker is approved.
 
 ## Result calculation engine
 
@@ -215,9 +215,9 @@ Low-risk reads and personal notification read markers do not need multi-document
 
 ## Deferred background worker
 
-No background worker is created or deployed during the foundation phase. The backend remains worker-ready, but a second process type is introduced only when the first concrete asynchronous feature requires it. At that point it is built from `apps/api`, shares application ports but not HTTP routes, and may handle:
+No background worker is currently created or deployed. The backend remains worker-ready, but a second process type is introduced only when the first concrete asynchronous feature requires it. At that point it is built from `apps/api`, shares application ports but not HTTP routes, and may handle:
 
-- upload verification and malware scanning;
+- malware scanning and orphan reconciliation when approved;
 - notification fan-out;
 - report-card PDF rendering;
 - retryable cleanup of unclaimed/quarantined/orphaned objects;

@@ -7,25 +7,34 @@
     "node": "22.19.0"
   },
   "scripts": {
+    "access:sync": "tsx src/bootstrap/sync-access-control.ts",
+    "bootstrap:super-admin": "tsx src/bootstrap/bootstrap-super-admin.ts",
+    "db:indexes": "tsx src/bootstrap/create-database-indexes.ts",
     "dev": "tsx watch src/server.ts",
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/server.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:integration": "vitest run --config vitest.integration.config.ts"
   },
   "dependencies": {
     "@onyx/contracts": "workspace:*",
+    "argon2": "catalog:",
+    "cloudinary": "catalog:",
     "cookie-parser": "catalog:",
     "cors": "catalog:",
     "dotenv": "catalog:",
     "express": "catalog:",
+    "express-rate-limit": "catalog:",
     "helmet": "catalog:",
+    "jose": "catalog:",
     "mongoose": "catalog:",
     "pino": "catalog:",
     "pino-http": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@testcontainers/mongodb": "catalog:",
     "@types/cookie-parser": "catalog:",
     "@types/cors": "catalog:",
     "@types/express": "catalog:",

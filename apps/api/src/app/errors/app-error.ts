@@ -42,8 +42,11 @@ export class ValidationError extends AppError {
 }
 
 export class AuthenticationError extends AppError {
-  public constructor(message = 'Authentication is required.') {
-    super(message, { code: 'AUTHENTICATION_REQUIRED', statusCode: 401 });
+  public constructor(
+    message = 'Authentication is required.',
+    code: PublicErrorCode = 'AUTHENTICATION_REQUIRED',
+  ) {
+    super(message, { code, statusCode: 401 });
   }
 }
 
@@ -68,5 +71,20 @@ export class ConflictError extends AppError {
 export class DomainConflictError extends AppError {
   public constructor(message = 'The requested operation is not valid in the current state.') {
     super(message, { code: 'DOMAIN_CONFLICT', statusCode: 409 });
+  }
+}
+
+export class RateLimitError extends AppError {
+  public constructor(message = 'Too many requests. Please try again later.') {
+    super(message, { code: 'RATE_LIMITED', statusCode: 429 });
+  }
+}
+
+export class PasswordChangeRequiredError extends AppError {
+  public constructor() {
+    super('You must change your temporary password before continuing.', {
+      code: 'PASSWORD_CHANGE_REQUIRED',
+      statusCode: 403,
+    });
   }
 }

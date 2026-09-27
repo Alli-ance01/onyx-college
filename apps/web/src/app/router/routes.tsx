@@ -1,9 +1,23 @@
-import type { RouteObject } from 'react-router';
+import { Navigate, type RouteObject } from 'react-router';
 
+import { ChangePasswordPage, LoginPage } from '../../features/auth/auth-pages.js';
+import { RequireAuthentication } from '../../features/auth/route-guards.js';
+import {
+  AdminAcademicSetupPage,
+  AdminCorrectionQueuePage,
+  AdminRegistrationQueuePage,
+  AdminRegistrationReviewPage,
+  AdminStudentDirectoryPage,
+  AdminStudentProfilePage,
+} from '../../features/admin/student-admin-pages.js';
+import { RegistrationPage } from '../../features/student-onboarding/registration-page.js';
+import { StudentSignupPage } from '../../features/student-onboarding/student-signup-page.js';
+import { StudentDashboardPage, StudentProfilePage } from '../../features/students/student-pages.js';
 import { RouteErrorBoundary } from '../error-boundaries/route-error-boundary.js';
 import { PortalLayout } from '../layouts/portal-layout.js';
 import { PublicLayout } from '../layouts/public-layout.js';
 import { FoundationPage } from './foundation-page.js';
+import { PortalHome } from './portal-home.js';
 
 export const appRoutes: RouteObject[] = [
   {
@@ -15,75 +29,73 @@ export const appRoutes: RouteObject[] = [
         index: true,
         element: (
           <FoundationPage
-            description="The React workspace, routing, query client, API boundary, error handling, and design tokens are configured. Product workflows begin in later vertical slices."
-            eyebrow="Production workspace"
-            title="Onyx College Portal foundation"
+            description="Students can create an applicant account, complete registration, and enter the Student Portal after school approval. Staff use the same secure system for review and administration."
+            eyebrow="Onyx College"
+            title="One secure portal for your school community"
           />
         ),
       },
+      { path: 'auth', element: <Navigate replace to="/auth/login" /> },
+      { path: 'auth/login', element: <LoginPage /> },
+      { path: 'auth/change-password', element: <ChangePasswordPage /> },
+      { path: 'student-signup', element: <StudentSignupPage /> },
+    ],
+  },
+  {
+    element: <RequireAuthentication portal="STUDENT" />,
+    children: [
       {
-        path: 'auth/*',
-        element: (
-          <FoundationPage
-            description="This route group is reserved for public and authentication experiences. Authentication is intentionally not implemented in this phase."
-            eyebrow="Public/Auth route group"
-            title="Authentication foundation only"
-          />
-        ),
+        path: '/student',
+        element: <PortalLayout portalName="Student Portal" />,
+        errorElement: <RouteErrorBoundary />,
+        children: [
+          { index: true, element: <Navigate replace to="dashboard" /> },
+          { path: 'dashboard', element: <StudentDashboardPage /> },
+          { path: 'profile', element: <StudentProfilePage /> },
+        ],
       },
     ],
   },
   {
-    path: '/student',
-    element: <PortalLayout portalName="Student Portal" />,
-    errorElement: <RouteErrorBoundary />,
+    element: <RequireAuthentication portal="TEACHER" />,
     children: [
       {
-        index: true,
-        element: (
-          <FoundationPage
-            description="The Student Portal layout boundary is prepared. No student product screens or workflows exist yet."
-            eyebrow="Student Portal"
-            title="Student shell"
-            variant="portal"
-          />
-        ),
+        path: '/teacher',
+        element: <PortalLayout portalName="Teacher Portal" />,
+        errorElement: <RouteErrorBoundary />,
+        children: [{ index: true, element: <PortalHome /> }],
       },
     ],
   },
   {
-    path: '/teacher',
-    element: <PortalLayout portalName="Teacher Portal" />,
-    errorElement: <RouteErrorBoundary />,
+    element: <RequireAuthentication portal="ADMIN" />,
     children: [
       {
-        index: true,
-        element: (
-          <FoundationPage
-            description="The Teacher Portal layout boundary is prepared. No teacher product screens or academic authority are implemented."
-            eyebrow="Teacher Portal"
-            title="Teacher shell"
-            variant="portal"
-          />
-        ),
+        path: '/admin',
+        element: <PortalLayout portalName="Admin Portal" />,
+        errorElement: <RouteErrorBoundary />,
+        children: [
+          { index: true, element: <PortalHome /> },
+          { path: 'students/registrations', element: <AdminRegistrationQueuePage /> },
+          {
+            path: 'students/registrations/:registrationId',
+            element: <AdminRegistrationReviewPage />,
+          },
+          { path: 'students/corrections', element: <AdminCorrectionQueuePage /> },
+          { path: 'students', element: <AdminStudentDirectoryPage /> },
+          { path: 'students/:studentId', element: <AdminStudentProfilePage /> },
+          { path: 'academics/setup', element: <AdminAcademicSetupPage /> },
+        ],
       },
     ],
   },
   {
-    path: '/admin',
-    element: <PortalLayout portalName="Admin Portal" />,
-    errorElement: <RouteErrorBoundary />,
+    element: <RequireAuthentication portal="ONBOARDING" />,
     children: [
       {
-        index: true,
-        element: (
-          <FoundationPage
-            description="The Admin Portal layout boundary is prepared. No administrative product screens or permissions are implemented."
-            eyebrow="Admin Portal"
-            title="Admin shell"
-            variant="portal"
-          />
-        ),
+        path: '/onboarding',
+        element: <PublicLayout />,
+        children: [{ index: true, element: <RegistrationPage /> }],
       },
     ],
   },

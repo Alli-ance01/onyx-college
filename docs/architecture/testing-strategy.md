@@ -54,7 +54,7 @@ Tests assert status, stable error code, response contract, state effects, audit 
 
 ### Contract tests
 
-Shared Zod DTO schemas are tested against representative server responses and frontend fixtures. OpenAPI generation, if introduced, is checked for drift. Object-storage adapter contract tests run against a test S3-compatible service and, on a scheduled basis, the selected provider to detect signing incompatibility.
+Shared Zod DTO schemas are tested against representative server responses and frontend fixtures. OpenAPI generation, if introduced, is checked for drift. The Cloudinary adapter has deterministic gateway-level tests for authenticated upload metadata, resource-type mapping, signed access, exact deletion, and safe provider failures. A credentialed pre-production or scheduled provider smoke suite must additionally exercise the selected Cloudinary cloud so SDK/signing or account-policy drift is detected without calling production storage from ordinary unit tests.
 
 ### Frontend tests
 
@@ -176,7 +176,7 @@ Performance tests use anonymized generated data, never production exports.
 
 ## Test data and isolation
 
-Factories create valid domain states through approved builders rather than giant fixtures. Each test owns its database namespace or cleans explicit collections safely. Clocks, randomness, and IDs are controllable. No test calls real email/push services or production storage. Sensitive example data is fictional.
+Factories create valid domain states through approved builders rather than giant fixtures. Each test owns its database namespace or cleans explicit collections safely. Clocks, randomness, and IDs are controllable. No ordinary test calls real email/push services or production storage. Provider smoke tests use an isolated non-production Cloudinary configuration and explicit cleanup. Sensitive example data is fictional.
 
 ## CI quality gates
 

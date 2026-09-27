@@ -1,6 +1,6 @@
 # ADR 0005: Private S3-Compatible Object Storage
 
-**Status:** Accepted
+**Status:** Superseded by [ADR 0009](0009-cloudinary-production-storage.md)
 
 ## Context
 
@@ -23,3 +23,5 @@ Use Cloudflare R2 as the preferred private S3-compatible provider behind a stora
 - Presigned URLs are bearer credentials and require narrow operations, short expiry, and log redaction.
 - Provider-specific calls stay in one adapter, preserving an S3 migration path.
 - Malware scanning provider and per-purpose size/type limits need production approval.
+
+This record remains as the history of the original recommendation. The production-provider decision and implemented delivery model are now defined by ADR 0009.

@@ -1,14 +1,10 @@
-export type AuthSessionStatus = 'anonymous' | 'authenticated' | 'checking';
+import type { AuthenticatedPrincipal } from '@onyx/contracts';
 
-export interface AuthenticatedPrincipal {
-  displayName: string;
-  userId: string;
-}
+export type AuthSessionStatus = 'anonymous' | 'authenticated' | 'checking' | 'expired';
 
-export interface AuthSessionSnapshot {
-  principal: AuthenticatedPrincipal | null;
-  status: AuthSessionStatus;
-}
+export type AuthSessionSnapshot =
+  | { principal: AuthenticatedPrincipal; status: 'authenticated' }
+  | { principal: null; status: Exclude<AuthSessionStatus, 'authenticated'> };
 
 export interface AccessTokenProvider {
   getAccessToken(): string | null;
@@ -16,4 +12,14 @@ export interface AccessTokenProvider {
 
 export interface SessionRefresher {
   refreshSession(): Promise<boolean>;
+}
+
+export interface LoginCredentials {
+  identifier: string;
+  password: string;
+}
+
+export interface PasswordChange {
+  currentPassword: string;
+  newPassword: string;
 }

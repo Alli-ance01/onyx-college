@@ -10,6 +10,8 @@ import { httpLogging } from './app/middleware/http-logging.js';
 import { requestId } from './app/middleware/request-id.js';
 import { createHealthRouter } from './app/routes/health.js';
 import type { AppEnvironment } from './config/environment.js';
+import { createIdentityModule } from './modules/identity/index.js';
+import { createStudentOnboardingModule } from './modules/student-registration/index.js';
 import type { ReadinessProbe } from './platform/health/service-readiness.js';
 
 interface AppDependencies {
@@ -45,6 +47,8 @@ export function createApp({
   app.use(cookieParser());
 
   app.use('/api/v1/health', createHealthRouter(readiness));
+  app.use('/api/v1/auth', createIdentityModule(environment).router);
+  app.use('/api/v1', createStudentOnboardingModule(environment).router);
   registerFoundationRoutes?.(app);
 
   app.use((_request, _response, next) => {

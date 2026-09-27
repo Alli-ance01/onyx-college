@@ -14,7 +14,7 @@ Run MongoDB as a replica set and use bounded multi-document transactions for def
 
 - Eventual consistency for core workflows: rejected because partially approved students or partially published reports are unacceptable.
 - Denormalizing all workflow data into giant documents: rejected because canonical entities have independent lifecycle/history and unbounded growth risks.
-- Two-phase commit with external services: rejected; object storage and delivery are coordinated through an outbox and idempotent jobs.
+- Two-phase commit with external services: rejected. Current bounded storage operations use explicit lifecycle states, verified provider responses, compensating cleanup, and idempotent retry outside transactions. Effects that must follow an authoritative business commit use the outbox and, once approved, idempotent jobs.
 - Transactions for every write: rejected because single-document atomicity is enough for many low-risk operations.
 
 ## Consequences

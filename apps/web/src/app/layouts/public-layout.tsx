@@ -10,14 +10,13 @@ export function PublicLayout() {
           </span>
           <span>
             <strong>Onyx College</strong>
-            <small>Portal foundation</small>
+            <small>School information portal</small>
           </span>
         </NavLink>
-        <nav aria-label="Foundation previews" className="public-nav">
-          <NavLink to="/auth">Public/Auth</NavLink>
-          <NavLink to="/student">Student</NavLink>
-          <NavLink to="/teacher">Teacher</NavLink>
-          <NavLink to="/admin">Admin</NavLink>
+        <nav aria-label="Public navigation" className="public-nav">
+          <NavLink to="/">Home</NavLink>
+          <NavLink to="/student-signup">Student application</NavLink>
+          <NavLink to="/auth/login">Sign in</NavLink>
         </nav>
       </header>
       <Outlet />

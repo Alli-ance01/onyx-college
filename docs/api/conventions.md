@@ -31,6 +31,19 @@ POST   /api/v1/result-correction-requests/:requestId/apply
 
 Nouns are plural and kebab-case. Path nesting is shallow; filter by related resource rather than nesting several levels. Command names are verbs because they expose explicit state transitions.
 
+### Implemented student-onboarding endpoints
+
+- POST /api/v1/student-signups creates only an applicant account and its registration draft.
+- GET or PATCH /api/v1/student-registrations/me reads or saves the authenticated applicant's versioned draft.
+- POST /api/v1/student-registrations/me/submit validates and submits the applicant's own registration.
+- GET /api/v1/student-registrations provides the permission-protected admin review queue, including status, search, and duplicate-review filters.
+- Student registration review uses explicit start-review, request-changes, reject, reopen, resolve-duplicate, and approve command endpoints. Approval requires an Idempotency-Key header.
+- GET /api/v1/academic-setup returns persisted class, track, and current-context options. Its privileged initial-session command supplies only the minimum setup needed for legitimate placement.
+- Document-requirement and student-document endpoints support private registration uploads, authorized viewing, replacement/removal, and permission-protected review.
+- Student self dashboard, profile, and profile-correction endpoints are ownership-based.
+- Admin student directory/profile and correction-decision endpoints are permission protected.
+- POST /api/v1/registration-form-configurations creates a new validated configuration version; it does not mutate the configuration retained by submitted registrations.
+
 ## Resource identifiers
 
 MongoDB object IDs are serialized as opaque strings. Clients must not parse or infer ordering from them. Human identifiers such as `ONYX/0042` are separate fields and are never substituted for authorization.
@@ -199,6 +212,20 @@ The refresh credential is an HttpOnly cookie and is never returned in JSON. Refr
 
 The current-principal response may expose effective permissions and lifecycle/navigation facts but not refresh credentials or claims of broad teacher scope.
 
+### Implemented authentication endpoints
+
+- `POST /api/v1/auth/login` — credential login; sets the refresh cookie and returns an in-memory access token, CSRF token, and current principal.
+- `GET /api/v1/auth/csrf` — validates the refresh credential and returns its session-bound CSRF token for browser session restoration.
+- `POST /api/v1/auth/refresh` — rotates the refresh credential and returns a new access token. `AUTH_REFRESH_RETRY` signals a benign concurrent rotation and may be retried once after reacquiring CSRF state.
+- `POST /api/v1/auth/logout` — validates and revokes the current refresh session, then clears the cookie.
+- `GET /api/v1/auth/me` — returns the current authoritative principal for a valid bearer access token.
+- `GET /api/v1/auth/sessions` — lists the caller's active sessions after forced password setup is complete.
+- `DELETE /api/v1/auth/sessions/:sessionId` — revokes an owned session; non-owned identifiers return not found.
+- `POST /api/v1/auth/logout-others` — revokes the caller's other active sessions.
+- `POST /api/v1/auth/change-password` — verifies the current password, replaces it with an Argon2id hash, clears forced-change state, revokes other sessions, and rotates the current refresh credential.
+
+Authentication routes are non-cacheable. Cookie-authorized mutations require the configured portal origin and session-bound `X-CSRF-Token`; bearer-only session-management commands still enforce session ownership server-side.
+
 ## Idempotency
 
 Commands that allocate identifiers, create multi-document outcomes, publish records, or may be retried after an ambiguous network result accept:
@@ -225,17 +252,19 @@ Use this for form configuration drafts, academic configuration, profiles, assign
 
 ## File upload and download flow
 
-Binary content is not proxied through normal JSON routes by default and is never stored in MongoDB.
+Binary content is never encoded into normal JSON payloads and is never stored in MongoDB. The current student-onboarding flow is a deliberate small-file exception to direct-to-provider transfer: the API receives a bounded raw body, enforces policy, and writes it through the provider-neutral storage port.
 
-1. `POST /api/v1/upload-intents` with purpose, related resource, safe filename, declared MIME, size, and checksum when supported.
-2. API authorizes and returns an intent ID, expiry, required headers, and presigned PUT URL for a quarantine key.
-3. Client uploads directly to object storage using exactly those headers.
-4. `POST /api/v1/upload-intents/:intentId/complete` verifies and queues scanning.
-5. The client polls/queries the associated document/attachment resource until it is `AVAILABLE`, `REJECTED`, or requires document review.
+1. `GET /api/v1/document-requirements` returns active requirements and their allowed MIME types and size limits.
+2. `PUT /api/v1/student-documents/:requirementId/content` accepts a raw JPEG, PNG, or PDF body with its declared `Content-Type` and sanitized display name in `X-File-Name`.
+3. The API authenticates the caller, checks registration ownership and editable state, resolves the requirement, enforces the lower of the global and requirement-specific size limits, and verifies the file signature against the declared MIME type.
+4. In production, the Cloudinary adapter uploads the validated asset using `authenticated` delivery and an opaque public ID. The API verifies provider metadata before recording the document as `AVAILABLE`. The local private-filesystem adapter is development/test-only and production refuses to start with it.
+5. A replacement creates a new provider asset and document metadata version; it does not overwrite the active asset in place.
+6. `GET /api/v1/student-documents/:documentId/download-url` reauthorizes the caller and returns either a very short-lived signed Cloudinary URL or a `PROXY` instruction for the local adapter. `GET .../:documentId/content` is the authorized proxy path used by the latter and retained as a controlled compatibility path.
+7. `DELETE /api/v1/student-documents/:documentId` coordinates an explicit pending-removal state, provider deletion, and the final metadata state. A caller cannot address another student's document by substituting an ID.
 
-Presigned URLs are never embedded in durable resource DTOs. An authorized `POST .../:fileId/download-url` or equivalent action returns a short-lived signed GET URL. The API can instead redirect only if cache, audit, and browser behavior are acceptable.
+Signed URLs are never embedded in durable resource DTOs, persisted by clients, cached by a service worker, or written to logs. They are temporary bearer credentials and do not replace authorization. Cloudinary credentials and signing secrets are backend-only.
 
-Multipart API upload may be retained for very small controlled assets if implementation constraints justify it; it follows the same scanning and metadata lifecycle.
+Future assignment attachments use the same storage port and file-policy boundary. A future direct-to-provider upload-intent flow may be added if file sizes or throughput justify it, but it must preserve server-authorized purpose, constrained upload parameters, post-upload verification, and metadata lifecycle; it is not an implemented endpoint today.
 
 ## Asynchronous commands
 

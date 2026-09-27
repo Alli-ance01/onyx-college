@@ -3,10 +3,17 @@ packages:
   - packages/*
 
 allowBuilds:
+  # Argon2 requires its vetted native binding installation; Testcontainers' optional SSH acceleration does not.
+  argon2: true
+  cpu-features: false
   # Vite's compiler binary requires its official platform-install script.
   esbuild: true
+  protobufjs: false
+  ssh2: false
 
 overrides:
+  # Keep direct and transitive compile-time Node declarations aligned with the repository runtime.
+  '@types/node': 22.19.21
   # Vitest exposes jsdom as an optional peer; keep every resolved test peer on the Node 22.19-compatible line.
   jsdom: 29.0.1
 
@@ -14,6 +21,7 @@ catalog:
   '@eslint/js': 10.0.1
   '@hookform/resolvers': 5.9.1
   '@tanstack/react-query': 5.103.2
+  '@testcontainers/mongodb': 11.14.0
   '@testing-library/jest-dom': 7.0.1
   '@testing-library/react': 16.3.3
   '@types/cookie-parser': 1.4.10
@@ -24,8 +32,10 @@ catalog:
   '@types/react-dom': 19.3.0
   '@types/supertest': 7.2.1
   '@vitejs/plugin-react': 6.1.1
+  argon2: 0.45.1
   concurrently: 10.0.5
   cookie-parser: 1.4.7
+  cloudinary: 2.11.0
   cors: 2.8.6
   dotenv: 18.0.3
   eslint: 10.11.0
@@ -33,9 +43,11 @@ catalog:
   eslint-plugin-react-hooks: 7.1.1
   eslint-plugin-react-refresh: 0.5.7
   express: 5.2.1
+  express-rate-limit: 8.7.0
   globals: 17.12.0
   helmet: 8.3.0
   jsdom: 29.0.1
+  jose: 6.2.12
   mongoose: 9.10.2
   pino: 10.3.1
   pino-http: 11.0.0

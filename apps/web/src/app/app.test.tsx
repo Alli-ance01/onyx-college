@@ -16,9 +16,9 @@ describe('application foundation', () => {
     );
 
     expect(
-      await screen.findByRole('heading', { name: 'Onyx College Portal foundation' }),
+      await screen.findByRole('heading', { name: 'One secure portal for your school community' }),
     ).toBeVisible();
-    expect(screen.getByRole('navigation', { name: 'Foundation previews' })).toBeVisible();
+    expect(screen.getByRole('navigation', { name: 'Public navigation' })).toBeVisible();
     expect(screen.getByRole('status')).toHaveTextContent(
       'Foundation ready for vertical feature slices',
     );

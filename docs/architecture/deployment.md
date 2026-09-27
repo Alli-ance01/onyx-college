@@ -9,12 +9,12 @@ The recommended initial topology is:
 | Web application  | Vercel static hosting                      | Versioned SPA build, CDN, HTTPS, fallback rewrite to `index.html` |
 | API              | Render web service                         | Long-running Node.js `22.19.0` process, health checks, controlled deploys |
 | Database         | MongoDB Atlas replica set                  | Transactions, backups, monitoring, network controls               |
-| Object storage   | Cloudflare R2                              | Private S3-compatible bucket/prefixes and presigned access        |
+| Object storage   | Cloudinary                                 | Authenticated assets through the provider-neutral storage adapter |
 | Error monitoring | Sentry when approved                       | Backend/frontend releases and redacted errors                     |
 | Logs             | Render initially; hosted sink when needed  | Structured JSON with retention appropriate to sensitivity         |
 | DNS/TLS          | School-controlled domain and managed HTTPS | Stable web/API origins under the school domain                    |
 
-This is a vendor recommendation, not a domain dependency. Storage, logging, and monitoring are behind adapters. Unresolved vendor selections do not block the application foundation. The API requires a conventional long-running runtime because transactions, connection pooling, graceful lifecycle management, and predictable refresh-cookie handling are a better fit than per-request serverless functions. A worker deployment is added only when a concrete asynchronous feature requires it.
+Cloudinary is the approved production storage provider, but it remains an adapter choice rather than a domain dependency. Logging and monitoring also remain behind adapters, so unresolved vendors do not block the application. The API requires a conventional long-running runtime because transactions, connection pooling, graceful lifecycle management, and predictable refresh-cookie handling are a better fit than per-request serverless functions. A worker deployment is added only when a concrete asynchronous feature requires it.
 
 Suggested origins are `portal.<school-domain>` for the web application and `api.<school-domain>` for the API. Same-site subdomains simplify cookie and CSRF policy while preserving separate deployments. Exact domain names are an operational approval.
 
@@ -24,7 +24,7 @@ At minimum:
 
 - local development with local/test-only database and storage emulator or isolated bucket;
 - automated test with disposable replica-set database and fake delivery adapters;
-- production with dedicated Atlas database, R2 resources, signing keys, and origins.
+- production with a dedicated Atlas database, dedicated Cloudinary production configuration, signing keys, and origins.
 
 A persistent staging environment is recommended before production data onboarding if budget permits. It must use synthetic data and its own credentials/buckets; production data is not copied casually.
 
@@ -60,9 +60,13 @@ Index creation on populated collections is an explicit release operation with ex
 
 ## Object storage operations
 
-Use separate production and non-production buckets or accounts. Private access is the default; public school assets are isolated by bucket or explicit prefix/policy. CORS permits only the approved portal origin and required signed methods/headers.
+Use separate production and non-production Cloudinary clouds/accounts where the selected plan supports them, or otherwise enforce strict credential and folder isolation. Sensitive student assets use `authenticated` delivery. Public school assets, when implemented, use an explicit public classification and distinct logical prefix rather than inheriting protected-document behavior.
 
-Lifecycle rules may remove abandoned quarantine uploads and superseded objects only after the database-driven retention/safety window. Versioned report PDFs and authoritative student documents are not subject to a broad automatic expiry rule. Provider access logs, if enabled, must not be exposed publicly.
+The API receives the current bounded onboarding upload, validates its purpose, MIME type, signature, and size, and uploads it through the storage port. Production startup requires `DOCUMENT_STORAGE_DRIVER=cloudinary`, `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET`. The secret and signing capability exist only in the Render API environment; they are never configured in Vercel or any `VITE_*` value. `DOCUMENT_SIGNED_URL_TTL_SECONDS` is bounded from 30 to 600 seconds and defaults to 120.
+
+Cloudinary automatic deletion rules must not broadly expire authoritative student documents or future versioned report PDFs. Replacement retains an explicit prior metadata version. Removal is coordinated by an observable metadata state and exact provider deletion. Until a concrete worker exists, interrupted deletions or compensating cleanup are handled by idempotent retry and operator reconciliation; no undeclared worker process is deployed.
+
+A credentialed pre-production smoke test must verify authenticated upload, short-lived signed access, replacement, exact deletion, and cross-user denial. Provider access/log data and signed URL query strings must not be exposed publicly or copied into application logs.
 
 ## API operations and future worker
 
@@ -85,7 +89,7 @@ V1 alerts should be small and actionable:
 - API crash loop or readiness failure, plus worker health after a worker exists;
 - elevated 5xx/error-monitoring rate;
 - MongoDB connectivity or transaction failure spike;
-- durable queue age/failed-job threshold;
+- durable queue age/failed-job threshold after a worker exists;
 - storage/scanning failures;
 - security events such as refresh reuse or bootstrap attempts;
 - backup failure and capacity warnings.
@@ -101,7 +105,7 @@ The following categories are expected, subject to a current-version/security rev
 - API: Node.js `22.19.0`, Express, Mongoose/MongoDB driver, Zod;
 - security: `jose`, Argon2, Helmet, CORS/rate-limit support, secure randomness from Node;
 - correctness: `decimal.js` or equivalent decimal library;
-- deferred storage/jobs/PDF feature dependencies: AWS S3-compatible SDK, a MongoDB-backed outbox/job implementation, Playwright/Chromium, file-signature detection and an approved malware scanner;
+- storage/deferred jobs/PDF dependencies: the Cloudinary Node SDK for the implemented production adapter; later, a MongoDB-backed outbox/job implementation, Playwright/Chromium, and an approved malware scanner when their features are introduced;
 - logging/monitoring: Pino and optional Sentry/OpenTelemetry adapters;
 - testing: Vitest, Testing Library, MSW, Supertest, Playwright, Testcontainers.
 
@@ -205,8 +209,8 @@ PWA installability, Web Push, native packaging, attendance, fees, timetable, and
 
 These are architecture/operational choices, not unresolved product/domain questions:
 
-1. approve or replace the proposed Vercel + Render + Atlas + R2 provider combination and regions;
-2. select malware scanning approach/provider and allowed per-purpose upload limits;
+1. confirm regions for the approved Vercel + Render + Atlas topology and the selected Cloudinary product environment;
+2. select malware scanning approach/provider and approve per-purpose upload limits beyond the current bounded onboarding policy;
 3. select password-reset/invitation delivery channel and provider;
 4. select error monitoring/log retention providers and data residency settings;
 5. approve retention/recovery objectives for audit logs, notifications, uploads, backups, and superseded PDFs;

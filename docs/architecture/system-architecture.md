@@ -49,14 +49,14 @@ docs/
 ```text
 Browser / future installed PWA
         |
-        | HTTPS JSON API; direct presigned object uploads/downloads
+        | HTTPS JSON API; bounded document uploads; signed protected downloads
         v
 React single-page application
         |
         v
 Express modular monolith
         |       |
-        |       +---- private object storage (when introduced)
+        |       +---- private Cloudinary object storage through an adapter
         v
 MongoDB replica set / Atlas
         |
@@ -113,7 +113,7 @@ Read models may be optimized for portal views, but they are projections of canon
 
 Business modules publish typed application events such as `RegistrationApproved`, `AssignmentPublished`, and `ResultPublished`. Events express completed facts, not requests to bypass module APIs.
 
-When a concrete feature first requires reliable deferred effects, it introduces a transactional outbox stored in MongoDB and a worker from the same repository. That worker will lease and process outbox/job records with idempotent handlers, bounded retries, exponential backoff, and a terminal failed state for operator review. Likely triggers include notification fan-out, virus scanning, report-card PDF generation, orphan cleanup, or later push/email delivery. Until one of those features exists, no worker process, job persistence, or worker deployment is created.
+Student onboarding introduces transactional outbox persistence because registration decisions and profile-correction decisions must durably record future notification facts in the same commit as their authoritative mutations. No process consumes those records yet. When a concrete feature first requires asynchronous delivery, a worker from the same repository will lease and process outbox/job records with idempotent handlers, bounded retries, exponential backoff, and a terminal failed state for operator review. Likely triggers include notification fan-out, virus scanning, report-card PDF generation, orphan cleanup, or later push/email delivery. Until then, no worker process or worker deployment is created.
 
 In-process handlers may be used only for non-critical work that can safely be lost. Anything that must occur after a committed business mutation is recorded durably in the same database transaction.
 
@@ -140,23 +140,26 @@ Report-card PDFs are rendered asynchronously from the immutable snapshot, stored
 
 ## File storage
 
-The preferred provider is Cloudflare R2 through an S3-compatible storage adapter. R2 provides private object storage and presigned S3 operations while preserving provider portability. The API creates upload intents; clients upload directly to a quarantine key; a completion command verifies size, checksum, declared type, detected type, and object existence before the file can become available.
+Cloudinary is the approved production provider behind the existing document-storage port. Sensitive student assets use Cloudinary's `authenticated` delivery type; private access never depends on an obscure public URL. The API keeps provider credentials and signing authority, authorizes each protected read, and issues a short-lived signed URL. The local private-filesystem adapter remains available only for development and tests, and production configuration refuses it.
 
-Private documents and assignment attachments require authorization before each short-lived download URL is issued. Public school assets are stored separately or under an explicit public prefix. Object keys contain internal opaque IDs, never student names, Student IDs, phone numbers, or other sensitive data.
+The implemented onboarding upload flow is intentionally bounded and server-mediated: the client sends a raw JPEG, PNG, or PDF body to the API; the API checks the document requirement, ownership, declared MIME type, file signature, and effective size limit before uploading it through the adapter. It verifies the provider response before committing an available metadata record. This avoids exposing unrestricted upload credentials and keeps current file-policy enforcement authoritative. A future direct-upload optimization, if operational measurements justify one, must preserve the same intent, validation, completion, and authorization boundaries.
 
-The logical key patterns are:
+Private documents and future assignment attachments require authorization before each short-lived download URL is issued. Public school assets, when implemented, use an explicitly separate public classification. Logical object identifiers contain internal opaque IDs, never student names, Student IDs, phone numbers, original filenames, or other sensitive data.
+
+Current and reserved logical patterns are:
 
 ```text
-quarantine/{uploadIntentId}/{objectId}
-private/student-documents/{registrationOrStudentInternalId}/{studentDocumentId}/v{version}/{objectId}.{ext}
-private/assignment-attachments/{assignmentId}/{attachmentId}/v{version}/{objectId}.{ext}
+private/student-documents/{registrationInternalId}/{studentDocumentId}/{opaqueObjectId}.{ext}
+private/assignment-attachments/{assignmentId}/{attachmentId}/{opaqueObjectId}.{ext}
 private/report-cards/{enrollmentId}/{termId}/{termReportId}/v{version}.pdf
 public/school-assets/{settingsVersion}/{assetId}/v{version}.{ext}
 ```
 
-The storage adapter owns provider-specific bucket/prefix mapping. Replacement always creates a new key/version and changes metadata only after validation; it does not overwrite an object in place. Report PDFs are generated after publication and stored for repeatable download. If an expected PDF is missing, a job regenerates it solely from the immutable TermReport snapshot and recorded template version rather than from current mutable data.
+The adapter maps logical keys to Cloudinary resource/public IDs; image public IDs omit their extension while raw-file public IDs retain the format required by Cloudinary. MongoDB stores only metadata and lifecycle state, including provider, protected provider identifier, resource/delivery type, original display filename, MIME type, size, checksum, requirement/type, upload status, verification status, and provider version/asset ID when available.
 
-Detailed controls are in [security.md](security.md) and the object-storage ADR.
+Replacement always creates a new asset and metadata version; it never overwrites prior evidence in place. Explicit removal first records a pending state, performs an idempotent provider delete outside any MongoDB transaction, and then records completion so an interruption is visible and retryable. The current implementation does not create a cleanup worker. Future report PDFs may use the same port and are generated only from immutable TermReport snapshots and recorded template versions.
+
+Detailed controls are in [security.md](security.md) and [ADR 0009](decisions/0009-cloudinary-production-storage.md).
 
 ## Notifications
 
@@ -207,4 +210,6 @@ The web structure reserves clean integration points for a manifest, service work
 
 - [pnpm workspaces](https://pnpm.io/workspaces)
 - [MongoDB transactions](https://www.mongodb.com/docs/manual/core/transactions/)
-- [Cloudflare R2 presigned URLs](https://developers.cloudflare.com/r2/api/s3/presigned-urls/)
+- [Cloudinary access-controlled media](https://cloudinary.com/documentation/control_access_to_media)
+- [Cloudinary upload API](https://cloudinary.com/documentation/image_upload_api_reference)
+- [Cloudinary asset deletion](https://cloudinary.com/documentation/delete_assets)

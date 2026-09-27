@@ -27,6 +27,16 @@ export class ApiClientError extends Error {
     this.details = envelope?.error.details;
     this.requestId = envelope?.error.requestId;
   }
+
+  public static async fromResponse(response: Response): Promise<ApiClientError> {
+    try {
+      const payload: unknown = await response.json();
+      const parsed = errorEnvelopeSchema.safeParse(payload);
+      return new ApiClientError(response.status, parsed.success ? parsed.data : undefined);
+    } catch {
+      return new ApiClientError(response.status);
+    }
+  }
 }
 
 interface ApiClientOptions {
@@ -61,6 +71,58 @@ export class ApiClient {
     return this.#request<TResponse>(path, options, false);
   }
 
+  public upload<TResponse>(
+    path: string,
+    file: File,
+    onProgress?: (percent: number) => void,
+  ): Promise<TResponse> {
+    return new Promise((resolve, reject) => {
+      const request = new XMLHttpRequest();
+      request.open('PUT', `${this.#baseUrl}${path}`);
+      request.responseType = 'json';
+      request.withCredentials = true;
+      request.setRequestHeader('Accept', 'application/json');
+      request.setRequestHeader('Content-Type', file.type);
+      request.setRequestHeader('X-File-Name', file.name);
+      request.setRequestHeader('X-Request-Id', `web_${crypto.randomUUID()}`);
+      const accessToken = this.#accessTokenProvider?.getAccessToken();
+      if (accessToken !== undefined && accessToken !== null)
+        request.setRequestHeader('Authorization', `Bearer ${accessToken}`);
+      request.upload.addEventListener('progress', (event) => {
+        if (event.lengthComputable) onProgress?.(Math.round((event.loaded / event.total) * 100));
+      });
+      request.addEventListener('load', () => {
+        const parsed = errorEnvelopeSchema.safeParse(request.response);
+        if (request.status >= 200 && request.status < 300) resolve(request.response as TResponse);
+        else reject(new ApiClientError(request.status, parsed.success ? parsed.data : undefined));
+      });
+      request.addEventListener('error', () => {
+        reject(new ApiClientError(0));
+      });
+      request.send(file);
+    });
+  }
+
+  public async download(path: string, retriedAfterRefresh = false): Promise<Blob> {
+    const headers = new Headers({ Accept: '*/*', 'X-Request-Id': `web_${crypto.randomUUID()}` });
+    const accessToken = this.#accessTokenProvider?.getAccessToken();
+    if (accessToken !== undefined && accessToken !== null)
+      headers.set('Authorization', `Bearer ${accessToken}`);
+    const response = await this.#fetch(`${this.#baseUrl}${path}`, {
+      credentials: 'include',
+      headers,
+    });
+    if (
+      response.status === 401 &&
+      !retriedAfterRefresh &&
+      this.#sessionRefresher !== undefined &&
+      (await this.#sessionRefresher.refreshSession())
+    )
+      return this.download(path, true);
+    if (!response.ok) throw await ApiClientError.fromResponse(response);
+    return response.blob();
+  }
+
   async #request<TResponse>(
     path: string,
     options: ApiRequestOptions,
@@ -90,19 +152,17 @@ export class ApiClient {
     };
     const response = await this.#fetch(`${this.#baseUrl}${path}`, requestInit);
 
-    if (
-      response.status === 401 &&
-      !retriedAfterRefresh &&
-      this.#sessionRefresher !== undefined &&
-      (await this.#sessionRefresher.refreshSession())
-    ) {
-      return this.#request<TResponse>(path, options, true);
+    const method = (requestOptions.method ?? 'GET').toUpperCase();
+    const safeToRetry = method === 'GET' || method === 'HEAD' || method === 'OPTIONS';
+    if (response.status === 401 && !retriedAfterRefresh && this.#sessionRefresher !== undefined) {
+      const refreshed = await this.#sessionRefresher.refreshSession();
+      if (refreshed && safeToRetry) {
+        return this.#request<TResponse>(path, options, true);
+      }
     }
 
     if (!response.ok) {
-      const errorPayload = await this.#readJson(response);
-      const parsed = errorEnvelopeSchema.safeParse(errorPayload);
-      throw new ApiClientError(response.status, parsed.success ? parsed.data : undefined);
+      throw await ApiClientError.fromResponse(response);
     }
 
     if (response.status === 204) {
@@ -110,13 +170,5 @@ export class ApiClient {
     }
 
     return (await response.json()) as TResponse;
-  }
-
-  async #readJson(response: Response): Promise<unknown> {
-    try {
-      return await response.json();
-    } catch {
-      return undefined;
-    }
   }
 }

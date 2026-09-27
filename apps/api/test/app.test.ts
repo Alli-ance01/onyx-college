@@ -4,18 +4,14 @@ import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
 import { createApp } from '../src/app.js';
-import type { AppEnvironment } from '../src/config/environment.js';
+import { loadEnvironment } from '../src/config/environment.js';
 import type { ReadinessProbe } from '../src/platform/health/service-readiness.js';
 
-const environment: AppEnvironment = {
-  JSON_BODY_LIMIT: '1mb',
-  LOG_LEVEL: 'info',
+const environment = loadEnvironment({
   MONGODB_URI: 'mongodb://127.0.0.1:27017/onyx_test',
   NODE_ENV: 'test',
-  PORT: 4_000,
-  TRUST_PROXY_HOPS: 0,
   WEB_ORIGIN: 'http://localhost:5173',
-};
+});
 
 const logger = pino({ enabled: false });
 const errorEnvelopeSchema = z.object({
@@ -94,5 +90,42 @@ describe('API foundation', () => {
     });
     expect(JSON.stringify(response.body)).not.toContain('internal-host');
     expect(responseBody.error).not.toHaveProperty('stack');
+  });
+
+  it('rate limits repeated credential-sensitive requests before database work', async () => {
+    const limitedEnvironment = loadEnvironment({
+      AUTH_LOGIN_RATE_LIMIT_MAX: '1',
+      MONGODB_URI: 'mongodb://127.0.0.1:27017/onyx_test',
+      NODE_ENV: 'test',
+      WEB_ORIGIN: 'http://localhost:5173',
+    });
+    const app = createApp({
+      environment: limitedEnvironment,
+      logger,
+      readiness: createReadiness(true),
+    });
+
+    await request(app)
+      .post('/api/v1/auth/login')
+      .set('Origin', limitedEnvironment.WEB_ORIGIN)
+      .send({})
+      .expect(400);
+    const limited = await request(app)
+      .post('/api/v1/auth/login')
+      .set('Origin', limitedEnvironment.WEB_ORIGIN)
+      .send({})
+      .expect(429);
+    expect(limited.body).toMatchObject({ error: { code: 'RATE_LIMITED' } });
+  });
+
+  it('rejects malformed or untrusted browser origins as CSRF failures', async () => {
+    const app = createApp({ environment, logger, readiness: createReadiness(true) });
+
+    const response = await request(app)
+      .post('/api/v1/auth/login')
+      .set('Referer', 'not-a-valid-url')
+      .send({})
+      .expect(403);
+    expect(response.body).toMatchObject({ error: { code: 'CSRF_VALIDATION_FAILED' } });
   });
 });
