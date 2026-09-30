@@ -48,21 +48,35 @@ export function StudentSignupPage() {
   return (
     <main className="auth-content auth-content--split">
       <aside className="auth-aside" aria-label="Onyx College application guidance">
-        <div className="auth-aside__mark" aria-hidden="true">O</div>
+        <div className="auth-aside__mark" aria-hidden="true">
+          O
+        </div>
         <p className="eyebrow">Student admissions</p>
         <h2>Your next chapter starts with a clear first step.</h2>
         <p className="auth-aside__description">
           Create one account for your application, documents, and updates from the school.
         </p>
         <ol className="auth-aside__steps">
-          <li><span aria-hidden="true">01</span><span>Create your applicant account.</span></li>
-          <li><span aria-hidden="true">02</span><span>Complete the registration details.</span></li>
-          <li><span aria-hidden="true">03</span><span>Track review and next steps.</span></li>
+          <li>
+            <span aria-hidden="true">01</span>
+            <span>Create your applicant account.</span>
+          </li>
+          <li>
+            <span aria-hidden="true">02</span>
+            <span>Complete the registration details.</span>
+          </li>
+          <li>
+            <span aria-hidden="true">03</span>
+            <span>Track review and next steps.</span>
+          </li>
         </ol>
         <p className="auth-aside__footer">A considered start makes the rest clearer.</p>
       </aside>
       <section className="auth-card surface signup-card" aria-labelledby="signup-title">
-        <div className="auth-card__topline"><span>01</span><span>Student application</span></div>
+        <div className="auth-card__topline">
+          <span>01</span>
+          <span>Student application</span>
+        </div>
         <p className="eyebrow">Begin here</p>
         <h1 id="signup-title">Create your applicant account.</h1>
         <p className="auth-card__intro">

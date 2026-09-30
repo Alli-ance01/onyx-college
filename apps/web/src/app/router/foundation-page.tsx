@@ -11,7 +11,8 @@ const pathways = [
   {
     eyebrow: 'For students',
     title: 'Start your application',
-    description: 'Create your applicant account, complete your profile, and keep your next step in view.',
+    description:
+      'Create your applicant account, complete your profile, and keep your next step in view.',
     action: 'Apply to Onyx',
     to: '/student-signup',
     tone: 'ochre',
@@ -19,7 +20,8 @@ const pathways = [
   {
     eyebrow: 'For the school community',
     title: 'Enter your workspace',
-    description: 'Students, teachers, and administrators can sign in to the tools and records they use every day.',
+    description:
+      'Students, teachers, and administrators can sign in to the tools and records they use every day.',
     action: 'Sign in securely',
     to: '/auth/login',
     tone: 'ink',
@@ -58,7 +60,9 @@ export function FoundationPage({
             <span />
           </div>
           <p className="eyebrow">{eyebrow} · One connected school day</p>
-          <h1 id="foundation-title">A clearer way to move through <em>school life.</em></h1>
+          <h1 id="foundation-title">
+            A clearer way to move through <em>school life.</em>
+          </h1>
           <p className="foundation-panel__summary">{description}</p>
           <div className="foundation-actions">
             <Link className="button-link button-link--arrow" to="/student-signup">
@@ -70,7 +74,9 @@ export function FoundationPage({
           </div>
           <div className="foundation-proof" role="status">
             <span className="status-dot" aria-hidden="true" />
-            <span><strong>One secure home</strong> for students, teachers, and school leaders.</span>
+            <span>
+              <strong>One secure home</strong> for students, teachers, and school leaders.
+            </span>
           </div>
         </div>
         <aside className="foundation-hero__aside" aria-label="Onyx College at a glance">
@@ -111,8 +117,13 @@ export function FoundationPage({
 
       <section className="landing-footer-note">
         <p className="eyebrow">Built for a full school day</p>
-        <p>From first application to final result, Onyx keeps the work connected, private, and ready when you are.</p>
-        <a className="text-link" href="/api/v1/health/live">Check system status ↗</a>
+        <p>
+          From first application to final result, Onyx keeps the work connected, private, and ready
+          when you are.
+        </p>
+        <a className="text-link" href="/api/v1/health/live">
+          Check system status ↗
+        </a>
       </section>
     </main>
   );

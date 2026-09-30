@@ -2700,7 +2700,9 @@ h3 {
   padding-inline: 1.25rem;
   border-color: var(--color-ink);
   background: var(--color-ink);
-  transition: background var(--transition-fast), transform var(--transition-fast);
+  transition:
+    background var(--transition-fast),
+    transform var(--transition-fast);
 }
 
 .button-link:hover {
@@ -2865,7 +2867,9 @@ h3 {
   padding: 2rem;
   border: 1px solid var(--color-line);
   background: #fff;
-  transition: box-shadow var(--transition-fast), transform var(--transition-fast);
+  transition:
+    box-shadow var(--transition-fast),
+    transform var(--transition-fast);
 }
 
 .pathway-card:hover {
@@ -3043,7 +3047,10 @@ h3 {
   border-radius: 0.15rem;
   color: #b9c7d6;
   font-size: 0.78rem;
-  transition: color var(--transition-fast), background var(--transition-fast), border-color var(--transition-fast);
+  transition:
+    color var(--transition-fast),
+    background var(--transition-fast),
+    border-color var(--transition-fast);
 }
 
 .portal-nav-item:hover {
@@ -3194,7 +3201,9 @@ h3 {
 }
 
 @keyframes onyx-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (max-width: 60rem) {
@@ -3287,7 +3296,6 @@ h3 {
     font-size: 1.15rem;
   }
 }
-
 
 /* Onyx UI/UX polish pass -------------------------------------------------- */
 .auth-content {
@@ -3449,7 +3457,9 @@ h3 {
   border-color: #cfd8e2;
   border-radius: 0.1rem;
   background: #fff;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 
 .auth-field input:hover {

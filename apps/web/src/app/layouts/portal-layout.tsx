@@ -501,7 +501,9 @@ export function PortalLayout({ portalName }: PortalLayoutProps) {
             </div>
           </div>
           <div className="portal-header__actions">
-            <span className="portal-header__status"><i aria-hidden="true" /> All systems normal</span>
+            <span className="portal-header__status">
+              <i aria-hidden="true" /> All systems normal
+            </span>
             <Link className="portal-header__password" to="/auth/change-password">
               Security
             </Link>
