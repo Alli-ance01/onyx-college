@@ -171,7 +171,7 @@ const registrationDataSchema = new Schema(
     },
     customResponses: { type: Schema.Types.Mixed, default: {} },
   },
-  { _id: false },
+  { _id: false, minimize: false },
 );
 
 const duplicateCandidateSchema = new Schema(
@@ -255,7 +255,12 @@ const studentRegistrationSchema = new Schema<StudentRegistrationRecord>(
     approvedEnrollmentId: { type: Schema.Types.ObjectId, ref: 'Enrollment' },
     approvalIdempotencyKey: { type: String },
   },
-  { collection: 'student_registrations', timestamps: true, versionKey: 'version' },
+  {
+    collection: 'student_registrations',
+    minimize: false,
+    timestamps: true,
+    versionKey: 'version',
+  },
 );
 studentRegistrationSchema.index(
   { userId: 1 },

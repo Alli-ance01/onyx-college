@@ -12,6 +12,21 @@ import { DomainConflictError, ValidationError } from '../../../app/errors/app-er
 
 const shortText = z.string().trim().max(120).optional();
 const longText = z.string().trim().max(500).optional();
+type RegistrationData = Omit<RegistrationDraftInput, 'version'>;
+
+export function normalizeRegistrationData(
+  data: Readonly<Record<string, unknown>>,
+): RegistrationData {
+  const partial = data as Partial<RegistrationData>;
+  return {
+    academic: partial.academic ?? {},
+    contact: partial.contact ?? {},
+    customResponses: partial.customResponses ?? {},
+    guardian: partial.guardian ?? {},
+    medical: partial.medical ?? {},
+    personal: partial.personal ?? {},
+  };
+}
 
 export const registrationDraftSchema = z
   .object({

@@ -33,6 +33,7 @@ import {
   formatStudentId,
   normalizeHumanName,
   normalizePhone,
+  normalizeRegistrationData,
 } from '../domain/registration-policy.js';
 import { StudentRegistrationModel } from '../infrastructure/registration-models.js';
 
@@ -44,38 +45,6 @@ interface ApprovalInput {
   registrationId: string;
   requestId: string;
   trackId?: string;
-}
-
-interface RegistrationData {
-  contact: { residentialAddress?: string };
-  guardian: {
-    address?: string;
-    alternatePhone?: string;
-    email?: string;
-    emergencyContact?: boolean;
-    fullName?: string;
-    occupation?: string;
-    phone?: string;
-    relationship?: string;
-  };
-  medical: {
-    allergies?: string;
-    bloodGroup?: string;
-    emergencyInstructions?: string;
-    genotype?: string;
-    medicalConditions?: string;
-    medications?: string;
-  };
-  personal: {
-    dateOfBirth?: string;
-    firstName?: string;
-    gender?: string;
-    lga?: string;
-    middleName?: string;
-    nationality?: string;
-    stateOfOrigin?: string;
-    surname?: string;
-  };
 }
 
 function required(value: string | undefined, field: string): string {
@@ -216,7 +185,7 @@ export class RegistrationApprovalService {
         { new: true, upsert: true, session },
       );
       const permanentStudentId = formatStudentId(counter.value);
-      const data = registration.data as unknown as RegistrationData;
+      const data = normalizeRegistrationData(registration.data);
       const student = new StudentModel({
         dateOfBirth: required(data.personal.dateOfBirth, 'date of birth'),
         firstName: required(data.personal.firstName, 'first name'),

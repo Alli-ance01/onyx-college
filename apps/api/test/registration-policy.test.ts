@@ -6,6 +6,7 @@ import {
   formatStudentId,
   normalizeHumanName,
   normalizePhone,
+  normalizeRegistrationData,
   validateRegistrationForSubmission,
 } from '../src/modules/student-registration/domain/registration-policy.js';
 
@@ -35,6 +36,24 @@ describe('student registration policy', () => {
   it('normalizes deterministic duplicate candidate values', () => {
     expect(normalizeHumanName('  Chídi   OKAFOR ')).toBe('chídi okafor');
     expect(normalizePhone('0801 234 5678')).toBe('+2348012345678');
+  });
+
+  it('restores bounded empty sections minimized by persistence', () => {
+    expect(
+      normalizeRegistrationData({
+        academic: { requestedClassLevelCode: 'JSS1' },
+        contact: {},
+        guardian: {},
+        personal: {},
+      }),
+    ).toEqual({
+      academic: { requestedClassLevelCode: 'JSS1' },
+      contact: {},
+      customResponses: {},
+      guardian: {},
+      medical: {},
+      personal: {},
+    });
   });
 
   it('classifies exact identity candidates as strong and partial candidates as warnings', () => {

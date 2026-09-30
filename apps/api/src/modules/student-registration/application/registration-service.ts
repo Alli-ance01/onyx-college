@@ -21,6 +21,7 @@ import {
   classifyDuplicateCandidate,
   normalizeHumanName,
   normalizePhone,
+  normalizeRegistrationData,
   validateRegistrationForSubmission,
 } from '../domain/registration-policy.js';
 import {
@@ -104,13 +105,12 @@ export class RegistrationService {
         .lean(),
     ]);
     if (configuration === null) throw new Error('Registration configuration version is missing.');
+    const data = normalizeRegistrationData(registration.data);
     return {
       allowedCorrectionFields: registration.allowedCorrectionFields,
       configuration: configurationDto(configuration),
       createdAt: (registration.createdAt ?? new Date()).toISOString(),
-      data: (includeSensitive
-        ? registration.data
-        : { ...registration.data, medical: {} }) as unknown as RegistrationData,
+      data: includeSensitive ? data : { ...data, medical: {} },
       documents: documents.map((document) => ({
         createdAt: document.createdAt.toISOString(),
         displayName: document.displayName,
@@ -186,7 +186,7 @@ export class RegistrationService {
       personal: input.personal,
     };
     if (current.status === 'CHANGES_REQUESTED') {
-      const unauthorized = changedPaths(current.data, data).filter(
+      const unauthorized = changedPaths(normalizeRegistrationData(current.data), data).filter(
         (path) =>
           !current.allowedCorrectionFields.some(
             (allowed) => path === allowed || path.startsWith(`${allowed}.`),
@@ -241,7 +241,7 @@ export class RegistrationService {
           path: `documents.${code}`,
         })),
       });
-    const data = registration.data as unknown as RegistrationData;
+    const data = normalizeRegistrationData(registration.data);
     validateRegistrationForSubmission(
       data,
       configuration.canonicalFields,
