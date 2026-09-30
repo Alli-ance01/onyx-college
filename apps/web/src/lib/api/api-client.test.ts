@@ -10,6 +10,17 @@ function response(body: unknown, status: number): Response {
 }
 
 describe('ApiClient authentication recovery', () => {
+  it('invokes fetch with the global receiver', async () => {
+    const fetchMock = vi.fn<typeof fetch>(function (this: unknown) {
+      expect(this).toBe(globalThis);
+      return Promise.resolve(response({ data: { ok: true } }, 200));
+    });
+    const client = new ApiClient({ baseUrl: '/api/v1', fetchImplementation: fetchMock });
+
+    await expect(client.request('/resource')).resolves.toEqual({ data: { ok: true } });
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
   it('refreshes and retries an idempotent read once', async () => {
     const fetchMock = vi
       .fn<typeof fetch>()
