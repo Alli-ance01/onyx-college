@@ -83,7 +83,7 @@ export class AcademicSetupService {
     await mongoose.connection.transaction(async (session) => {
       const [academicSession] = await AcademicSessionModel.create(
         [{ label: input.label, status: 'ACTIVE' }],
-        { session },
+        { ordered: true, session },
       );
       if (academicSession === undefined) throw new Error('Academic session creation failed.');
       const terms = await TermModel.create(
@@ -93,7 +93,7 @@ export class AcademicSetupService {
           ordinal: index + 1,
           status: input.activeTermOrdinal === index + 1 ? 'ACTIVE' : 'PLANNED',
         })),
-        { session },
+        { ordered: true, session },
       );
       const activeTerm = terms.find(({ ordinal }) => ordinal === input.activeTermOrdinal);
       if (activeTerm === undefined) throw new Error('Active term creation failed.');

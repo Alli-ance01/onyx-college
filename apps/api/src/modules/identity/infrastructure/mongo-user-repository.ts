@@ -105,7 +105,7 @@ export class MongoUserRepository implements UserRepository {
           },
         },
       ],
-      { new: true },
+      { returnDocument: 'after', updatePipeline: true },
     )
       .select({ lockedUntil: 1 })
       .lean();
