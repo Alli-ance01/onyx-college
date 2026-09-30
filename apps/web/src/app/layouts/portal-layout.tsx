@@ -466,6 +466,10 @@ export function PortalLayout({ portalName }: PortalLayoutProps) {
             <small>{auth.principal?.username}</small>
           </span>
         </div>
+        <div className="portal-sidebar__footer">
+          <span className="portal-sidebar__secure-dot" aria-hidden="true" />
+          <span>Private school workspace</span>
+        </div>
       </aside>
 
       <div className="portal-main">
@@ -486,15 +490,16 @@ export function PortalLayout({ portalName }: PortalLayoutProps) {
               <span aria-hidden="true" />
             </button>
             <div>
-              <span className="portal-header__portal">{portalName}</span>
+              <span className="portal-header__portal">Onyx College / {portalName}</span>
               <strong className="portal-header__context">
                 {currentItem?.label ?? 'Workspace'}
               </strong>
             </div>
           </div>
           <div className="portal-header__actions">
+            <span className="portal-header__status"><i aria-hidden="true" /> All systems normal</span>
             <Link className="portal-header__password" to="/auth/change-password">
-              Change password
+              Security
             </Link>
             <button className="text-button" onClick={() => void auth.logout()} type="button">
               Sign out
