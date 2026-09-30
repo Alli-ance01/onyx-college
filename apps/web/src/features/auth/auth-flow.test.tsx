@@ -98,9 +98,9 @@ describe('browser authentication lifecycle', () => {
       target: { value: 'super.admin' },
     });
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'temporary-secret' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+    fireEvent.click(screen.getByRole('button', { name: /Continue to workspace/iu }));
 
-    expect(await screen.findByRole('heading', { name: 'Change your password' })).toBeVisible();
+    expect(await screen.findByRole('heading', { name: 'Set a new password.' })).toBeVisible();
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledTimes(2);
     });
@@ -130,7 +130,7 @@ describe('browser authentication lifecycle', () => {
     renderApp('/auth/login', fetchMock);
 
     expect(await screen.findByText('Checking your secure session…')).toBeVisible();
-    expect(screen.queryByRole('button', { name: 'Sign in' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Continue to workspace/iu })).not.toBeInTheDocument();
 
     finishSessionCheck(
       jsonResponse(
@@ -145,7 +145,7 @@ describe('browser authentication lifecycle', () => {
       ),
     );
 
-    expect(await screen.findByRole('button', { name: 'Sign in' })).toBeVisible();
+    expect(await screen.findByRole('button', { name: /Continue to workspace/iu })).toBeVisible();
   });
 
   it('logs safe diagnostics when password change fails before an API response', async () => {
@@ -185,9 +185,9 @@ describe('browser authentication lifecycle', () => {
       fireEvent.change(screen.getByLabelText('Password'), {
         target: { value: 'temporary-secret' },
       });
-      fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+      fireEvent.click(screen.getByRole('button', { name: /Continue to workspace/iu }));
 
-      expect(await screen.findByRole('heading', { name: 'Change your password' })).toBeVisible();
+      expect(await screen.findByRole('heading', { name: 'Set a new password.' })).toBeVisible();
       fireEvent.change(screen.getByLabelText('Current password'), {
         target: { value: 'temporary-secret' },
       });
@@ -197,10 +197,10 @@ describe('browser authentication lifecycle', () => {
       fireEvent.change(screen.getByLabelText('Confirm new password'), {
         target: { value: 'a-secure-new-password-2026' },
       });
-      fireEvent.click(screen.getByRole('button', { name: 'Update password' }));
+      fireEvent.click(screen.getByRole('button', { name: /Save new password/iu }));
 
       expect(await screen.findByRole('alert')).toHaveTextContent(
-        'The request could not be completed. Please try again.',
+        'The service is taking longer than expected. Check your connection and try again.',
       );
       await waitFor(() => {
         expect(consoleError).toHaveBeenCalledWith('[Onyx auth] Password change failed', {
