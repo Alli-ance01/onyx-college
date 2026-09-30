@@ -2,7 +2,7 @@
 
 Onyx College Portal is the production school information and academic management platform for Onyx College. It provides three role-aware experiences—Student Portal, Teacher Portal, and Admin Portal—backed by one shared system and database.
 
-The product covers student onboarding and approval, historical academic enrollment, curriculum configuration, teacher assignments, read-only assignment delivery, announcements, results and report cards, promotions, documents, notifications, access control, and auditability.
+The product covers student onboarding and approval, historical academic enrollment, curriculum configuration, teacher assignments, read-only assignment delivery, announcements, results and report cards, promotions, documents, notifications, access control, auditability, and a refined responsive user experience.
 
 ## Repository status
 
