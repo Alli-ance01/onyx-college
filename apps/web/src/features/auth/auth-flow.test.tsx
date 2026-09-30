@@ -130,7 +130,9 @@ describe('browser authentication lifecycle', () => {
     renderApp('/auth/login', fetchMock);
 
     expect(await screen.findByText('Checking your secure session…')).toBeVisible();
-    expect(screen.queryByRole('button', { name: /Continue to workspace/iu })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /Continue to workspace/iu }),
+    ).not.toBeInTheDocument();
 
     finishSessionCheck(
       jsonResponse(
