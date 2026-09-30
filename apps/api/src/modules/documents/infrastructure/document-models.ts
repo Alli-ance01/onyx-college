@@ -1,5 +1,7 @@
 import { documentReviewStatuses } from '@onyx/contracts';
-import { model, models, Schema, type Model, type Types } from 'mongoose';
+import mongoose, { type Model, type Types } from 'mongoose';
+
+const { model, models, Schema } = mongoose;
 
 export interface DocumentRequirementRecord {
   acceptedMimeTypes: string[];

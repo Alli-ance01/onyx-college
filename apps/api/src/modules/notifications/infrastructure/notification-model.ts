@@ -1,10 +1,12 @@
-import { model, models, Schema, Types, type ClientSession, type Model } from 'mongoose';
+import mongoose, { type ClientSession, type Model, type Types as MongooseTypes } from 'mongoose';
+
+const { model, models, Schema, Types } = mongoose;
 
 export interface NotificationRecord {
   body: string;
   deduplicationKey: string;
   readAt?: Date;
-  recipientUserId: Types.ObjectId;
+  recipientUserId: MongooseTypes.ObjectId;
   resourceId?: string;
   resourceType?: string;
   sourceEventId?: string;
@@ -56,7 +58,7 @@ export async function createNotifications(
   records: readonly {
     body: string;
     deduplicationKey: string;
-    recipientUserId: Types.ObjectId | string;
+    recipientUserId: MongooseTypes.ObjectId | string;
     resourceId?: string;
     resourceType?: string;
     sourceEventId?: string;

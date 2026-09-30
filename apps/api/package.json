@@ -11,7 +11,7 @@
     "bootstrap:super-admin": "tsx src/bootstrap/bootstrap-super-admin.ts",
     "db:indexes": "tsx src/bootstrap/create-database-indexes.ts",
     "dev": "tsx watch src/server.ts",
-    "build": "tsc -p tsconfig.build.json",
+    "build": "tsc -p tsconfig.build.json && node scripts/verify-runtime-imports.mjs",
     "start": "node dist/server.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
