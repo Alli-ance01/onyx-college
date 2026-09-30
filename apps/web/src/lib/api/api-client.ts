@@ -60,7 +60,7 @@ export class ApiClient {
   public constructor(options: ApiClientOptions) {
     this.#accessTokenProvider = options.accessTokenProvider;
     this.#baseUrl = options.baseUrl.replace(/\/$/u, '');
-    this.#fetch = options.fetchImplementation ?? fetch;
+    this.#fetch = (options.fetchImplementation ?? globalThis.fetch).bind(globalThis);
     this.#sessionRefresher = options.sessionRefresher;
   }
 
