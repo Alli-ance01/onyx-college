@@ -8,6 +8,11 @@ import {
   TrackModel,
 } from '../../modules/academics/infrastructure/academic-models.js';
 import { AuditLogModel } from '../../modules/audit/infrastructure/audit-log-model.js';
+import { AnnouncementModel } from '../../modules/announcements/infrastructure/announcement-model.js';
+import {
+  AssignmentAttachmentModel,
+  AssignmentModel,
+} from '../../modules/assignments/infrastructure/assignment-models.js';
 import {
   DocumentRequirementModel,
   StudentDocumentModel,
@@ -19,6 +24,15 @@ import {
 } from '../../modules/guardians/infrastructure/guardian-models.js';
 import { AuthSessionModel } from '../../modules/identity/infrastructure/auth-session-model.js';
 import { UserModel } from '../../modules/identity/infrastructure/user-model.js';
+import { NotificationModel } from '../../modules/notifications/infrastructure/notification-model.js';
+import {
+  AssessmentSchemeModel,
+  GradingSchemeModel,
+  ResultBatchModel,
+  ResultCorrectionRequestModel,
+  ResultEntryModel,
+  TermReportModel,
+} from '../../modules/results/infrastructure/result-models.js';
 import {
   RegistrationFormConfigurationModel,
   StudentRegistrationModel,
@@ -29,9 +43,21 @@ import {
   StudentModel,
 } from '../../modules/students/infrastructure/student-models.js';
 import {
+  EnrollmentSubjectOverrideModel,
+  SubjectModel,
+  SubjectOfferingModel,
+} from '../../modules/subjects/infrastructure/subject-models.js';
+import {
   OutboxEventModel,
   SequenceCounterModel,
 } from '../../modules/system/infrastructure/system-models.js';
+import {
+  ClassTeacherAssignmentModel,
+  TeacherInvitationModel,
+  TeacherModel,
+  TeacherRegistrationModel,
+  TeachingAssignmentModel,
+} from '../../modules/teachers/infrastructure/teacher-models.js';
 
 export interface IndexableApplicationModel {
   createIndexes(): Promise<void>;
@@ -49,16 +75,27 @@ export interface IndexableApplicationModel {
  */
 export const applicationModels: readonly IndexableApplicationModel[] = [
   AcademicSessionModel,
+  AnnouncementModel,
+  AssessmentSchemeModel,
+  AssignmentAttachmentModel,
+  AssignmentModel,
   AuditLogModel,
   AuthSessionModel,
   ClassLevelModel,
+  ClassTeacherAssignmentModel,
   DocumentRequirementModel,
   EnrollmentModel,
+  EnrollmentSubjectOverrideModel,
+  GradingSchemeModel,
   GuardianModel,
+  NotificationModel,
   OutboxEventModel,
   PermissionModel,
   ProfileCorrectionRequestModel,
   RegistrationFormConfigurationModel,
+  ResultBatchModel,
+  ResultCorrectionRequestModel,
+  ResultEntryModel,
   RoleModel,
   SchoolSettingsModel,
   SequenceCounterModel,
@@ -67,7 +104,14 @@ export const applicationModels: readonly IndexableApplicationModel[] = [
   StudentMedicalProfileModel,
   StudentModel,
   StudentRegistrationModel,
+  SubjectModel,
+  SubjectOfferingModel,
+  TeacherInvitationModel,
+  TeacherModel,
+  TeacherRegistrationModel,
+  TeachingAssignmentModel,
   TermModel,
+  TermReportModel,
   TrackModel,
   UserModel,
 ];

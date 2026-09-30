@@ -283,19 +283,20 @@ export class RegistrationService {
         ? 'REGISTRATION_RESUBMITTED'
         : 'REGISTRATION_SUBMITTED';
     await mongoose.connection.transaction(async (session) => {
-      const [transactionRequirements, transactionDocuments] = await Promise.all([
-        DocumentRequirementModel.find({ active: true, requiredForRegistration: true })
-          .session(session)
-          .lean(),
-        StudentDocumentModel.find({
-          registrationId: registration._id,
-          status: 'ACTIVE',
-          uploadStatus: 'AVAILABLE',
-        })
-          .select({ documentRequirementId: 1 })
-          .session(session)
-          .lean(),
-      ]);
+      const transactionRequirements = await DocumentRequirementModel.find({
+        active: true,
+        requiredForRegistration: true,
+      })
+        .session(session)
+        .lean();
+      const transactionDocuments = await StudentDocumentModel.find({
+        registrationId: registration._id,
+        status: 'ACTIVE',
+        uploadStatus: 'AVAILABLE',
+      })
+        .select({ documentRequirementId: 1 })
+        .session(session)
+        .lean();
       const transactionDocumentIds = new Set(
         transactionDocuments.map(({ documentRequirementId }) => documentRequirementId.toString()),
       );

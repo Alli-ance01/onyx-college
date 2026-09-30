@@ -16,7 +16,7 @@ The recommended initial topology is:
 
 Cloudinary is the approved production storage provider, but it remains an adapter choice rather than a domain dependency. Logging and monitoring also remain behind adapters, so unresolved vendors do not block the application. The API requires a conventional long-running runtime because transactions, connection pooling, graceful lifecycle management, and predictable refresh-cookie handling are a better fit than per-request serverless functions. A worker deployment is added only when a concrete asynchronous feature requires it.
 
-Suggested origins are `portal.<school-domain>` for the web application and `api.<school-domain>` for the API. Same-site subdomains simplify cookie and CSRF policy while preserving separate deployments. Exact domain names are an operational approval.
+Suggested long-term origins are `portal.<school-domain>` for the web application and `api.<school-domain>` for the API. Same-site subdomains simplify cookie behavior while preserving separate deployments. The initial default `*.vercel.app` to `*.onrender.com` topology is also supported with a `Secure`, HTTP-only, `SameSite=None` refresh cookie, exact-origin credentialed CORS, trusted-origin validation, and session-bound CSRF tokens. Some browser privacy modes may still block third-party cookies, so sibling custom domains remain the reliability recommendation.
 
 ## Environments
 
@@ -205,7 +205,7 @@ Every phase includes database, backend, frontend, authorization, audit, and test
 
 PWA installability, Web Push, native packaging, attendance, fees, timetable, and every other documented out-of-scope module are not silently added to these phases.
 
-## Pre-implementation approvals still required
+## Operational approvals still required
 
 These are architecture/operational choices, not unresolved product/domain questions:
 
@@ -216,4 +216,4 @@ These are architecture/operational choices, not unresolved product/domain questi
 5. approve retention/recovery objectives for audit logs, notifications, uploads, backups, and superseded PDFs;
 6. confirm production domain names and whether a persistent staging environment is funded.
 
-Implementation can begin with adapters and local fakes for several of these, but production launch cannot.
+The application keeps these concerns behind adapters where applicable. A controlled deployment can proceed without choosing every future vendor, but real student intake requires the applicable security, retention, recovery, and operational decisions.

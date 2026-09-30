@@ -2,7 +2,7 @@ services:
   - type: web
     name: onyx-college-api
     runtime: node
-    plan: starter
+    plan: free
     region: frankfurt
     autoDeployTrigger: checksPass
     buildCommand: corepack enable && corepack prepare pnpm@12.6.0 --activate && pnpm install --frozen-lockfile --prod=false && pnpm --filter @onyx/api... build
@@ -35,7 +35,7 @@ services:
       - key: AUTH_COOKIE_SECURE
         value: 'true'
       - key: AUTH_COOKIE_SAME_SITE
-        value: lax
+        value: none
       - key: DOCUMENT_STORAGE_DRIVER
         value: cloudinary
       - key: DOCUMENT_MAX_BYTES

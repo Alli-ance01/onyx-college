@@ -4,10 +4,14 @@ export interface EnrollmentRecord {
   academicSessionId: Types.ObjectId;
   classLevelId: Types.ObjectId;
   enrolledAt: Date;
-  placementSourceRegistrationId: Types.ObjectId;
-  status: 'ACTIVE' | 'COMPLETED' | 'GRADUATED' | 'TRANSFERRED' | 'WITHDRAWN';
+  outcome?: 'GRADUATE' | 'PROMOTE' | 'REPEAT' | 'TRANSFER' | 'WITHDRAW';
+  placementSourceRegistrationId?: Types.ObjectId;
+  progressionSourceEnrollmentId?: Types.ObjectId;
+  status:
+    'ACTIVE' | 'ARCHIVED' | 'COMPLETED' | 'GRADUATED' | 'REPEATED' | 'TRANSFERRED' | 'WITHDRAWN';
   studentId: Types.ObjectId;
   trackId?: Types.ObjectId;
+  version: number;
 }
 
 const enrollmentSchema = new Schema<EnrollmentRecord>(
@@ -29,12 +33,28 @@ const enrollmentSchema = new Schema<EnrollmentRecord>(
     placementSourceRegistrationId: {
       type: Schema.Types.ObjectId,
       ref: 'StudentRegistration',
-      required: true,
       immutable: true,
+    },
+    progressionSourceEnrollmentId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Enrollment',
+      immutable: true,
+    },
+    outcome: {
+      type: String,
+      enum: ['PROMOTE', 'REPEAT', 'WITHDRAW', 'TRANSFER', 'GRADUATE'],
     },
     status: {
       type: String,
-      enum: ['ACTIVE', 'COMPLETED', 'WITHDRAWN', 'TRANSFERRED', 'GRADUATED'],
+      enum: [
+        'ACTIVE',
+        'COMPLETED',
+        'REPEATED',
+        'WITHDRAWN',
+        'TRANSFERRED',
+        'GRADUATED',
+        'ARCHIVED',
+      ],
       required: true,
       default: 'ACTIVE',
     },

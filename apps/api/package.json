@@ -23,6 +23,7 @@
     "cloudinary": "catalog:",
     "cookie-parser": "catalog:",
     "cors": "catalog:",
+    "decimal.js": "catalog:",
     "dotenv": "catalog:",
     "express": "catalog:",
     "express-rate-limit": "catalog:",
@@ -31,6 +32,7 @@
     "mongoose": "catalog:",
     "pino": "catalog:",
     "pino-http": "catalog:",
+    "pdf-lib": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

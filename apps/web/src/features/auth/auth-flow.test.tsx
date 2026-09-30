@@ -1,8 +1,10 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
 
 import { appRoutes } from '../../app/router/routes.js';
+import { createQueryClient } from '../../app/providers/query-client.js';
 import { AuthSessionProvider } from '../../lib/auth/auth-session-provider.js';
 
 const principal = {
@@ -28,9 +30,11 @@ function jsonResponse(body: unknown, status = 200): Response {
 function renderApp(initialEntry: string, fetchImplementation: typeof fetch) {
   const router = createMemoryRouter(appRoutes, { initialEntries: [initialEntry] });
   render(
-    <AuthSessionProvider fetchImplementation={fetchImplementation}>
-      <RouterProvider router={router} />
-    </AuthSessionProvider>,
+    <QueryClientProvider client={createQueryClient()}>
+      <AuthSessionProvider fetchImplementation={fetchImplementation}>
+        <RouterProvider router={router} />
+      </AuthSessionProvider>
+    </QueryClientProvider>,
   );
 }
 
@@ -52,9 +56,8 @@ describe('browser authentication lifecycle', () => {
 
     renderApp('/admin', fetchMock);
 
-    expect(
-      await screen.findByRole('heading', { name: 'Welcome, System Administrator' }),
-    ).toBeVisible();
+    expect(await screen.findByRole('heading', { name: 'School operations' })).toBeVisible();
+    expect(screen.getByText('System Administrator')).toBeVisible();
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(fetchMock.mock.calls[1]?.[1]).toMatchObject({
       credentials: 'include',

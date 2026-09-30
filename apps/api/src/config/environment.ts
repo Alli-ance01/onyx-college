@@ -15,7 +15,7 @@ const environmentSchema = z
       .string()
       .regex(/^[A-Za-z0-9_-]+$/u)
       .default('onyx_refresh'),
-    AUTH_COOKIE_SAME_SITE: z.enum(['lax', 'strict']).default('lax'),
+    AUTH_COOKIE_SAME_SITE: z.enum(['lax', 'none', 'strict']).default('lax'),
     AUTH_COOKIE_SECURE: z
       .enum(['true', 'false'])
       .default('false')
@@ -86,6 +86,14 @@ const environmentSchema = z
         code: 'custom',
         message: 'WEB_ORIGIN must contain only an origin, without a path.',
         path: ['WEB_ORIGIN'],
+      });
+    }
+
+    if (value.AUTH_COOKIE_SAME_SITE === 'none' && !value.AUTH_COOKIE_SECURE) {
+      context.addIssue({
+        code: 'custom',
+        message: 'AUTH_COOKIE_SECURE must be true when AUTH_COOKIE_SAME_SITE is none.',
+        path: ['AUTH_COOKIE_SECURE'],
       });
     }
 

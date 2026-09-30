@@ -1,8 +1,11 @@
 import { model, models, Schema, type Model, type Types } from 'mongoose';
 
 export interface AcademicSessionRecord {
+  createdAt: Date;
   label: string;
   status: 'ACTIVE' | 'ARCHIVED' | 'CLOSED' | 'DRAFT';
+  updatedAt: Date;
+  version: number;
 }
 
 const academicSessionSchema = new Schema<AcademicSessionRecord>(
@@ -32,6 +35,7 @@ export interface TermRecord {
   name: string;
   ordinal: number;
   status: 'ACTIVE' | 'ARCHIVED' | 'COMPLETED' | 'PLANNED';
+  version: number;
 }
 
 const termSchema = new Schema<TermRecord>(
@@ -104,11 +108,56 @@ const trackSchema = new Schema<TrackRecord>(
 trackSchema.index({ code: 1 }, { name: 'track_code_unique', unique: true });
 
 export interface SchoolSettingsRecord {
+  classPositionContexts?: {
+    academicSessionId: Types.ObjectId;
+    classLevelId: Types.ObjectId;
+    enabled: boolean;
+    normalizedTrackKey: string;
+    termId: Types.ObjectId;
+    trackId?: Types.ObjectId;
+  }[];
   currentAcademicSessionId?: Types.ObjectId;
   currentRegistrationConfigurationId?: Types.ObjectId;
   currentTermId?: Types.ObjectId;
+  schoolIdentity?: {
+    address: string;
+    contactEmail?: string;
+    contactPhone?: string;
+    displayName: string;
+    motto?: string;
+    websiteUrl?: string;
+  };
   singletonKey: 'SCHOOL';
+  updatedByUserId?: Types.ObjectId;
 }
+
+const schoolIdentitySchema = new Schema(
+  {
+    displayName: { type: String, required: true, trim: true, maxlength: 160 },
+    motto: { type: String, trim: true, maxlength: 240 },
+    address: { type: String, required: true, trim: true, maxlength: 500 },
+    contactEmail: { type: String, trim: true, maxlength: 254 },
+    contactPhone: { type: String, trim: true, maxlength: 40 },
+    websiteUrl: { type: String, trim: true, maxlength: 500 },
+  },
+  { _id: false },
+);
+
+const classPositionContextSchema = new Schema(
+  {
+    academicSessionId: {
+      type: Schema.Types.ObjectId,
+      ref: 'AcademicSession',
+      required: true,
+    },
+    termId: { type: Schema.Types.ObjectId, ref: 'Term', required: true },
+    classLevelId: { type: Schema.Types.ObjectId, ref: 'ClassLevel', required: true },
+    trackId: { type: Schema.Types.ObjectId, ref: 'Track' },
+    normalizedTrackKey: { type: String, required: true },
+    enabled: { type: Boolean, required: true, default: false },
+  },
+  { _id: false },
+);
 
 const schoolSettingsSchema = new Schema<SchoolSettingsRecord>(
   {
@@ -119,6 +168,13 @@ const schoolSettingsSchema = new Schema<SchoolSettingsRecord>(
       type: Schema.Types.ObjectId,
       ref: 'RegistrationFormConfiguration',
     },
+    schoolIdentity: { type: schoolIdentitySchema },
+    classPositionContexts: {
+      type: [classPositionContextSchema],
+      required: true,
+      default: [],
+    },
+    updatedByUserId: { type: Schema.Types.ObjectId, ref: 'User' },
   },
   { collection: 'school_settings', timestamps: true, versionKey: 'version' },
 );

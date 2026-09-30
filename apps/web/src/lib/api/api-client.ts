@@ -76,9 +76,18 @@ export class ApiClient {
     file: File,
     onProgress?: (percent: number) => void,
   ): Promise<TResponse> {
+    return this.uploadWithMethod(path, file, 'PUT', onProgress);
+  }
+
+  public uploadWithMethod<TResponse>(
+    path: string,
+    file: File,
+    method: 'POST' | 'PUT',
+    onProgress?: (percent: number) => void,
+  ): Promise<TResponse> {
     return new Promise((resolve, reject) => {
       const request = new XMLHttpRequest();
-      request.open('PUT', `${this.#baseUrl}${path}`);
+      request.open(method, `${this.#baseUrl}${path}`);
       request.responseType = 'json';
       request.withCredentials = true;
       request.setRequestHeader('Accept', 'application/json');

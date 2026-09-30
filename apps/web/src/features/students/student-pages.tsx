@@ -1,10 +1,12 @@
 import type { StudentDashboardDto, StudentProfileDto, SuccessEnvelope } from '@onyx/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { Link } from 'react-router';
 
 import { ApiClientError } from '../../lib/api/api-client.js';
 import { useAuthSession } from '../../lib/auth/use-auth-session.js';
 import { DocumentViewButton } from '../student-onboarding/document-view-button.js';
+import { studentPortalApi, studentPortalQueryKeys } from '../student-portal/student-portal-api.js';
 
 function initials(name: string): string {
   return name
@@ -22,6 +24,18 @@ export function StudentDashboardPage() {
     queryFn: async () =>
       (await auth.apiClient.request<SuccessEnvelope<StudentDashboardDto>>('/students/me/dashboard'))
         .data,
+  });
+  const assignments = useQuery({
+    queryKey: studentPortalQueryKeys.assignments,
+    queryFn: () => studentPortalApi.assignments(auth.apiClient),
+  });
+  const announcements = useQuery({
+    queryKey: studentPortalQueryKeys.announcements,
+    queryFn: () => studentPortalApi.announcements(auth.apiClient),
+  });
+  const reports = useQuery({
+    queryKey: studentPortalQueryKeys.reports,
+    queryFn: () => studentPortalApi.reports(auth.apiClient),
   });
   if (query.isLoading)
     return <main className="portal-content route-status">Loading your dashboard…</main>;
@@ -67,29 +81,60 @@ export function StudentDashboardPage() {
         </dl>
       </section>
       <section className="dashboard-grid">
-        <EmptyModule
+        <ModuleSummary
+          count={assignments.data?.length}
+          href="/student/assignments"
           title="Assignments"
-          text="Published assignments will appear here when the Assignments module is introduced."
+          text={
+            assignments.isError
+              ? 'Assignments could not be loaded.'
+              : (assignments.data?.[0]?.title ?? 'No assignments have been published.')
+          }
         />
-        <EmptyModule
+        <ModuleSummary
+          count={announcements.data?.length}
+          href="/student/announcements"
           title="Announcements"
-          text="School announcements will appear here when available."
+          text={
+            announcements.isError
+              ? 'Announcements could not be loaded.'
+              : (announcements.data?.[0]?.title ?? 'There are no current announcements.')
+          }
         />
-        <EmptyModule
+        <ModuleSummary
+          count={reports.data?.length}
+          href="/student/results"
           title="Results"
-          text="Published results and report cards will appear here when the Results module is introduced."
+          text={
+            reports.isError
+              ? 'Results could not be loaded.'
+              : reports.data?.[0] === undefined
+                ? 'No report cards have been published.'
+                : `${reports.data[0].sessionLabel} / ${reports.data[0].termName}`
+          }
         />
       </section>
     </main>
   );
 }
 
-function EmptyModule({ text, title }: { text: string; title: string }) {
+function ModuleSummary({
+  count,
+  href,
+  text,
+  title,
+}: {
+  count: number | undefined;
+  href: string;
+  text: string;
+  title: string;
+}) {
   return (
     <article className="empty-module surface">
-      <span aria-hidden="true">—</span>
+      <span aria-hidden="true">{count ?? '—'}</span>
       <h2>{title}</h2>
       <p>{text}</p>
+      <Link to={href}>View {title.toLocaleLowerCase()}</Link>
     </article>
   );
 }

@@ -169,7 +169,7 @@ V1 does not need a large performance program, but release checks should measure:
 - concurrent registration approval counter behavior;
 - result entry and cohort publication at expected maximum class size;
 - notification fan-out;
-- PDF memory/time and worker concurrency;
+- on-demand PDF memory/time and concurrent request limits;
 - audit and notification index growth.
 
 Performance tests use anonymized generated data, never production exports.

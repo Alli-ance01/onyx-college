@@ -26,7 +26,7 @@ The SPA stores the access token in memory and sends it as `Authorization: Bearer
 
 ### Refresh sessions
 
-Refresh credentials are opaque cryptographically random values. The browser receives the value only in an `HttpOnly`, `Secure` in production, `SameSite=Lax` cookie scoped to `/api/v1/auth` on the API host. MongoDB stores only a keyed hash of the token, never the bearer value.
+Refresh credentials are opaque cryptographically random values. The browser receives the value only in an `HttpOnly`, `Secure` in production cookie scoped to `/api/v1/auth` on the API host. The cookie is `SameSite=Lax` for same-site sibling domains and `SameSite=None` for the approved cross-site Vercel/Render topology; `None` is rejected unless `Secure` is enabled. MongoDB stores only a keyed hash of the token, never the bearer value.
 
 Every refresh rotates the credential. AuthSession tracks token family, current hash, immediately previous hash, user, device label, creation/use timestamps, expiry, revocation, and reuse evidence. The client uses a single in-tab promise and the Web Locks API when available to serialize refresh across tabs. The server uses a conditional rotation and a short, configured grace window: same-browser concurrent use of the immediately previous token returns `AUTH_REFRESH_RETRY` without revocation, while reuse outside that grace revokes the session and creates a security audit event. Unknown token material never revokes a session merely because it contains a valid-looking session ID.
 

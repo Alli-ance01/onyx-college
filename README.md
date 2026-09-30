@@ -6,11 +6,11 @@ The product covers student onboarding and approval, historical academic enrollme
 
 ## Repository status
 
-The production workspace, Authentication & Access Foundation, and Student Onboarding vertical slice are implemented. The repository includes public student account creation, configurable registration drafts and submission, deterministic duplicate review, private registration documents, explicit admin review commands, transactional approval, permanent Student ID allocation, initial Enrollment creation, approved student dashboards/profiles, correction requests, and the first database-backed admin student directory/profile experience. Private onboarding files use the document-storage abstraction: local private storage is available for development, while production is configured for authenticated Cloudinary assets with backend-authorized, short-lived signed access.
+The documented V1 portal is implemented as a production-oriented modular monolith. It includes authentication and access control; public student signup and configurable onboarding; registration review and transactional student activation; academic sessions, terms, levels, tracks, subjects, offerings, enrollment history, and promotion; private teacher onboarding and scoped academic assignments; assignments and protected attachments; targeted announcements; configurable result entry, review, approval, publication, corrections, report cards, and PDF download; in-app notifications; document administration; school settings; and append-only audit views.
 
-Teacher onboarding, the full academics administration module, subjects, assignments, announcements, results/report cards, notification delivery UI, email delivery, and background workers have not started. The Cloudinary adapter is ready for future assignment attachments, but the assignment feature itself is not implemented. The onboarding slice writes durable application events to an outbox, but no worker process consumes them yet. There is no approved external visual design.
+The web application provides real role-aware Student, Teacher, and Admin experiences backed by the shared API and MongoDB. Private files use a provider-neutral storage interface: local private storage is available for development, while production uses authenticated Cloudinary assets with backend-authorized, short-lived signed access.
 
-The eventual initial interface should be production-quality, but product rules, security, data integrity, historical correctness, and maintainable domain boundaries take priority over visual design.
+No background worker is deployed. Current notification writes are durable and synchronous, and report-card PDFs are generated from immutable published snapshots on demand. Email, Web Push, native notifications, and the other explicitly out-of-scope V1 modules are not included.
 
 ## Documentation structure
 
@@ -70,19 +70,21 @@ pnpm access:sync
 
 Production disables Mongoose automatic index creation. Run `pnpm db:indexes` as an explicit release operation before serving a schema version that introduces indexes. The command creates declared indexes without dropping unrecognized indexes; removal of obsolete indexes requires a separately reviewed migration.
 
-Create the one initial SUPER_ADMIN from an interactive server-side terminal:
+Create the one initial SUPER_ADMIN from a trusted interactive terminal that can connect to the target Atlas database:
 
 ```sh
 pnpm bootstrap:super-admin
 ```
 
-The command displays a generated temporary password once and requires it to be changed at first login. It refuses repeat bootstrap attempts. Never place that credential in command arguments, scripts, logs, or committed files.
+The command displays a generated temporary password once and requires it to be changed at first login. It refuses repeat bootstrap attempts. On Render Free, run the database and bootstrap commands locally against Atlas because the service has no interactive shell. Never place the temporary credential in command arguments, scripts, logs, or committed files.
 
-Transaction-focused authentication integration tests use Testcontainers and require a running Docker-compatible container runtime:
+Transaction-focused integration tests use Testcontainers and require a running Docker-compatible container runtime:
 
 ```sh
 pnpm test:integration
 ```
+
+Docker is a development/test dependency only; it is not required to deploy the application to Vercel, Render, Atlas, and Cloudinary. GitHub Actions runs the replica-set integration gate on its hosted runner.
 
 The API exposes `GET /api/v1/health/live` for process liveness and `GET /api/v1/health/ready` for dependency readiness. The web application defaults to the relative `/api/v1` base path and the development server proxies `/api` to the local API. Deployed API origins are supplied through `VITE_API_BASE_URL`.
 

@@ -167,8 +167,8 @@ One transaction conditionally closes/completes the source Enrollment, creates th
 
 - Submission and return-for-correction each conditionally transition the batch, validate component resolution, and audit.
 - Approval conditionally transitions the batch, enforces that approver differs from submitter/entry actor as specified, freezes calculation/configuration references, and audits.
-- Publication revalidates approval, configuration, report completeness, and optional cohort completeness; creates immutable TermReport snapshots; marks the publication atomically; audits; and writes notification/PDF outbox work.
-- A published correction transaction approves/applies an authorized correction, preserves original values and linkage, creates a new result/report version, marks supersession without deletion, audits every action, and queues replacement delivery/PDF work. Requester and approver must differ.
+- Publication revalidates approval, configuration, report completeness, and optional cohort completeness; creates immutable TermReport snapshots; marks the publication atomically; writes recipient-owned in-app notifications and durable outbox facts; and audits.
+- A published correction transaction approves/applies an authorized correction, preserves original values and linkage, creates a new result/report version, marks supersession without deletion, writes the corresponding durable notification/outbox facts, and audits every action. Requester and approver must differ.
 
 If a cohort cannot fit safely in one bounded publication transaction, the system stages versioned candidate snapshots and uses a final atomic publication marker only after every member has passed validation. Students never observe a partially published cohort. The concrete batching threshold will be tested against Atlas limits before implementation.
 
@@ -176,7 +176,7 @@ If a cohort cannot fit safely in one bounded publication transaction, the system
 
 Session state, term state, SchoolSettings pointers, audit, and outbox records commit together. The command requires an expected version and privileged permission.
 
-External calls are never made while a transaction is open. The current bounded document upload, replacement, and removal operations coordinate Cloudinary calls outside MongoDB transactions using explicit metadata lifecycle states, verified provider responses, compensating cleanup, and idempotent retry. Effects that must be delivered after an authoritative business commit—such as email, PDF rendering, future push delivery, or later storage cleanup—are recorded in the durable outbox and remain unprocessed until a concrete worker is approved.
+External calls are never made while a transaction is open. The current bounded document upload, replacement, and removal operations coordinate Cloudinary calls outside MongoDB transactions using explicit metadata lifecycle states, verified provider responses, compensating cleanup, and idempotent retry. Report-card PDFs are generated on demand from immutable TermReport snapshots with no external call. Effects that require asynchronous delivery—such as email, future push delivery, malware scanning, or later storage cleanup—are recorded in the durable outbox and remain unprocessed until a concrete worker is approved.
 
 ## Result calculation engine
 
@@ -218,8 +218,8 @@ Low-risk reads and personal notification read markers do not need multi-document
 No background worker is currently created or deployed. The backend remains worker-ready, but a second process type is introduced only when the first concrete asynchronous feature requires it. At that point it is built from `apps/api`, shares application ports but not HTTP routes, and may handle:
 
 - malware scanning and orphan reconciliation when approved;
-- notification fan-out;
-- report-card PDF rendering;
+- notification fan-out if measured audience sizes exceed the bounded synchronous V1 path;
+- pre-generated report-card PDFs if on-demand generation no longer meets measured latency or capacity needs;
 - retryable cleanup of unclaimed/quarantined/orphaned objects;
 - bounded bulk promotion orchestration when introduced.
 

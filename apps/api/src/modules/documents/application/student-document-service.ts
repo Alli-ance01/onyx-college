@@ -100,21 +100,19 @@ export class StudentDocumentService {
         );
         if (editableRegistration.modifiedCount !== 1)
           throw new ConflictError('Documents cannot be changed after submission.');
-        const [prior, latestInTransaction] = await Promise.all([
-          StudentDocumentModel.findOne({
-            registrationId: registration._id,
-            documentRequirementId: requirement._id,
-            status: 'ACTIVE',
-          })
-            .sort({ versionNumber: -1 })
-            .session(session),
-          StudentDocumentModel.findOne({
-            registrationId: registration._id,
-            documentRequirementId: requirement._id,
-          })
-            .sort({ versionNumber: -1 })
-            .session(session),
-        ]);
+        const prior = await StudentDocumentModel.findOne({
+          registrationId: registration._id,
+          documentRequirementId: requirement._id,
+          status: 'ACTIVE',
+        })
+          .sort({ versionNumber: -1 })
+          .session(session);
+        const latestInTransaction = await StudentDocumentModel.findOne({
+          registrationId: registration._id,
+          documentRequirementId: requirement._id,
+        })
+          .sort({ versionNumber: -1 })
+          .session(session);
         const versionNumber = (latestInTransaction?.versionNumber ?? 0) + 1;
         if (prior !== null)
           await StudentDocumentModel.updateOne(

@@ -113,7 +113,7 @@ Read models may be optimized for portal views, but they are projections of canon
 
 Business modules publish typed application events such as `RegistrationApproved`, `AssignmentPublished`, and `ResultPublished`. Events express completed facts, not requests to bypass module APIs.
 
-Student onboarding introduces transactional outbox persistence because registration decisions and profile-correction decisions must durably record future notification facts in the same commit as their authoritative mutations. No process consumes those records yet. When a concrete feature first requires asynchronous delivery, a worker from the same repository will lease and process outbox/job records with idempotent handlers, bounded retries, exponential backoff, and a terminal failed state for operator review. Likely triggers include notification fan-out, virus scanning, report-card PDF generation, orphan cleanup, or later push/email delivery. Until then, no worker process or worker deployment is created.
+Authoritative workflows write recipient-owned in-app Notification records and durable outbox facts in the same transaction as the business mutation. No process consumes the outbox records yet; they preserve a future delivery boundary for Web Push, native push, email, reconciliation, or other retryable effects. When measured volume or a concrete asynchronous channel requires it, a worker from the same repository will lease and process outbox/job records with idempotent handlers, bounded retries, exponential backoff, and a terminal failed state for operator review. Until then, no worker process or worker deployment is created.
 
 In-process handlers may be used only for non-critical work that can safely be lost. Anything that must occur after a committed business mutation is recorded durably in the same database transaction.
 
@@ -165,7 +165,7 @@ Detailed controls are in [security.md](security.md) and [ADR 0009](decisions/000
 
 `Notification` is the in-app delivery/read model. Business modules do not create notification documents directly; they emit typed events. Notification policies turn events into recipients and notification records. Delivery-channel adapters can later add Web Push, native push, or email without modifying the originating business modules.
 
-When notification fan-out is implemented, it is a concrete trigger for the deferred database-backed worker. Unread queries use recipient/status/time indexes. Old read notifications may be archived according to an approved retention policy; they must not be used as the audit record.
+V1 creates bounded in-app notification fan-out synchronously inside the originating transaction so users do not depend on a worker that does not exist. Unread queries use recipient/status/time indexes. If measured audience sizes make synchronous fan-out unsuitable, the durable outbox becomes the input to the deferred worker without changing business-module contracts. Old read notifications may be archived according to an approved retention policy; they must not be used as the audit record.
 
 ## Audit
 

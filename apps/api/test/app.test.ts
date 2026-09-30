@@ -128,4 +128,47 @@ describe('API foundation', () => {
       .expect(403);
     expect(response.body).toMatchObject({ error: { code: 'CSRF_VALIDATION_FAILED' } });
   });
+
+  it('accepts cross-site browser metadata only for the exact configured origin', async () => {
+    const app = createApp({ environment, logger, readiness: createReadiness(true) });
+
+    await request(app)
+      .post('/api/v1/auth/login')
+      .set('Origin', environment.WEB_ORIGIN)
+      .set('Sec-Fetch-Site', 'cross-site')
+      .send({})
+      .expect(400);
+
+    const untrusted = await request(app)
+      .post('/api/v1/auth/login')
+      .set('Origin', 'https://attacker.example')
+      .set('Referer', environment.WEB_ORIGIN + '/login')
+      .set('Sec-Fetch-Site', 'cross-site')
+      .send({})
+      .expect(403);
+
+    expect(untrusted.body).toMatchObject({ error: { code: 'CSRF_VALIDATION_FAILED' } });
+  });
+
+  it('requires secure cookies when SameSite=None is configured', () => {
+    expect(() =>
+      loadEnvironment({
+        AUTH_COOKIE_SAME_SITE: 'none',
+        AUTH_COOKIE_SECURE: 'false',
+        MONGODB_URI: 'mongodb://127.0.0.1:27017/onyx_test',
+        NODE_ENV: 'test',
+        WEB_ORIGIN: 'https://onyx-college.vercel.app',
+      }),
+    ).toThrow('AUTH_COOKIE_SECURE must be true when AUTH_COOKIE_SAME_SITE is none');
+
+    expect(
+      loadEnvironment({
+        AUTH_COOKIE_SAME_SITE: 'none',
+        AUTH_COOKIE_SECURE: 'true',
+        MONGODB_URI: 'mongodb://127.0.0.1:27017/onyx_test',
+        NODE_ENV: 'test',
+        WEB_ORIGIN: 'https://onyx-college.vercel.app',
+      }).AUTH_COOKIE_SAME_SITE,
+    ).toBe('none');
+  });
 });

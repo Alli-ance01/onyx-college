@@ -2,7 +2,7 @@
 
 ## Release boundary
 
-The current release deploys the application foundation, authentication and access control, and the Student Onboarding vertical slice. It is suitable for a controlled staging deployment after the checks below. It is not the complete V1 school portal: teacher onboarding, full academics administration, subjects, assignments, announcements, results/report cards, notification delivery, and background workers are not implemented.
+The current release contains the documented V1 Student, Teacher, and Admin portal flows. It is suitable for a controlled production-shaped deployment after the checks below. No background worker, email channel, Web Push channel, or product module outside the documented V1 boundary is deployed.
 
 Do not admit real student documents until the credentialed Cloudinary smoke test, replica-set integration suite, backup configuration, and upload-security decision in this runbook are complete.
 
@@ -12,9 +12,9 @@ Do not admit real student documents until the credentialed Cloudinary smoke test
 - Render hosts one long-running API web service. No worker is deployed.
 - MongoDB Atlas provides a replica-set database.
 - Cloudinary stores protected files as authenticated assets.
-- Use sibling HTTPS origins, for example `portal.school.example` and `api.school.example`.
+- The configured web origin is the only credentialed CORS/CSRF origin.
 
-The sibling-domain requirement is important. Refresh cookies are `Secure`, HTTP-only, and `SameSite=Lax`. Unrelated `*.vercel.app` and `*.onrender.com` sites do not satisfy that same-site policy. If custom sibling domains are unavailable, implement and security-test a same-origin reverse proxy before launch; do not weaken the cookie policy ad hoc.
+The checked-in free-tier deployment supports a `*.vercel.app` frontend calling a `*.onrender.com` API. Refresh cookies are `Secure`, HTTP-only, and `SameSite=None`; the API still requires the exact configured `Origin`, credentialed CORS, and the session-bound CSRF token on refresh-session mutations. Some privacy modes block third-party cookies regardless of these settings. School-owned sibling domains such as `portal.school.example` and `api.school.example` remain the more reliable production topology and permit `SameSite=Lax`.
 
 ## 1. Verify the release locally
 
@@ -60,11 +60,11 @@ The adapter uploads protected student files with Cloudinary's `authenticated` de
 
 ## 4. Create the Render API service
 
-Use the repository's `render.yaml` Blueprint. It defines one Starter Node web service in Frankfurt, pins Node.js `22.19.0`, installs pnpm `12.6.0`, builds the API and its workspace dependencies, starts the compiled Express server, and probes `/api/v1/health/ready`.
+Use the repository's `render.yaml` Blueprint. It defines one Free Node web service in Frankfurt, pins Node.js `22.19.0`, installs pnpm `12.6.0`, builds the API and its workspace dependencies, starts the compiled Express server, and probes `/api/v1/health/ready`.
 
 During Blueprint creation, provide the values marked `sync: false`:
 
-- `WEB_ORIGIN=https://portal.school.example` with no trailing slash
+- `WEB_ORIGIN=https://temporary.invalid` for the first deployment only; replace it with the exact Vercel production origin in step 6
 - `MONGODB_URI=<Atlas connection string>`
 - `CLOUDINARY_CLOUD_NAME=<production cloud name>`
 - `CLOUDINARY_API_KEY=<production API key>`
@@ -74,51 +74,67 @@ Render generates and retains the access-token secret and refresh-token pepper. D
 
 - `NODE_ENV=production`
 - `TRUST_PROXY_HOPS=1`
-- secure `SameSite=Lax` refresh cookies
+- secure `SameSite=None` refresh cookies for the default Vercel/Render domains
 - `DOCUMENT_STORAGE_DRIVER=cloudinary`
 - a 5 MiB upload limit
 - 120-second protected download links
 
-Do not set `PORT`; Render supplies it. After the service exists, add its outbound ranges to Atlas, attach `api.school.example`, wait for TLS verification, and deploy.
+Do not set `PORT`; Render supplies it. After the service exists, add its listed outbound addresses to the Atlas network access list and deploy. The Free service may sleep when idle, so the first request after inactivity can be slow.
 
 Confirm:
 
 ```text
-GET https://api.school.example/api/v1/health/live
-GET https://api.school.example/api/v1/health/ready
+GET https://<render-service>.onrender.com/api/v1/health/live
+GET https://<render-service>.onrender.com/api/v1/health/ready
 ```
 
 Both must return successful API envelopes, and readiness must become unhealthy if the database is unavailable.
 
 ## 5. Run controlled database release operations
 
-Production startup disables Mongoose automatic index creation. In the Render Shell, run the compiled, idempotent release commands before opening the portal to users:
+Production startup disables Mongoose automatic index creation. Render Free has no interactive shell, so run the idempotent release commands from a trusted local terminal directly against Atlas before opening the portal to users.
+
+Temporarily allow the operator computer's current public IP in the Atlas network access list. Copy `apps/api/.env.example` to the gitignored `apps/api/.env`, then use:
+
+```dotenv
+NODE_ENV=development
+MONGODB_URI=<production Atlas connection string>
+WEB_ORIGIN=http://localhost:5173
+AUTH_ACCESS_TOKEN_SECRET=<local random value of at least 32 characters>
+AUTH_REFRESH_TOKEN_PEPPER=<different local random value of at least 32 characters>
+DOCUMENT_STORAGE_DRIVER=local
+```
+
+The release commands only need the target database connection and their normal validated local configuration. The local authentication values above are not the Render runtime secrets.
 
 ```sh
-node apps/api/dist/bootstrap/create-database-indexes.js
-node apps/api/dist/bootstrap/sync-access-control.js
+pnpm db:indexes
+pnpm access:sync
 ```
 
 The index command creates all currently declared indexes and fails on incompatible existing data. It does not drop undeclared indexes. Index removal and data backfills require a separately reviewed migration.
 
-Then create the first and only bootstrap SUPER_ADMIN from the interactive Render Shell:
+Then create the first and only bootstrap SUPER_ADMIN from that interactive local terminal:
 
 ```sh
-node apps/api/dist/bootstrap/bootstrap-super-admin.js
+pnpm bootstrap:super-admin
 ```
 
-Capture the generated temporary password only in the approved secure channel, sign in immediately, and complete the forced password change. Re-running the bootstrap must be refused.
+Capture the generated temporary password only in the approved secure channel. Delete the local `apps/api/.env` when these operations are complete, remove the temporary operator IP from Atlas if it is no longer needed, sign in immediately, and complete the forced password change. Re-running the bootstrap must be refused.
 
 ## 6. Create the Vercel web project
 
 1. Import the same GitHub repository into Vercel.
 2. Keep the Vercel Root Directory at the repository root so workspace packages remain available.
 3. Use the checked-in `vercel.json`. It installs the pinned pnpm version, builds `@onyx/web` and its dependencies, publishes `apps/web/dist`, and rewrites SPA routes to `index.html`.
-4. Set `VITE_API_BASE_URL=https://api.school.example/api/v1` for Production.
+4. Set `VITE_API_BASE_URL=https://<render-service>.onrender.com/api/v1` for Production.
 5. Select Node.js `22.x` in Vercel project settings.
-6. Attach `portal.school.example`, verify DNS/TLS, and redeploy after the environment value is set.
+6. Deploy and copy the exact production origin, for example `https://onyx-college.vercel.app`.
+7. Replace Render's temporary `WEB_ORIGIN` with that exact origin, without a trailing slash, and redeploy the API.
 
 Vercel guarantees the selected Node major and may advance the minor/patch version. The delivered web application is static; the long-running production API remains exactly pinned to Node.js `22.19.0` on Render.
+
+If school-owned sibling domains are attached later, update both environment values together and change `AUTH_COOKIE_SAME_SITE` to `lax`. Do not configure wildcard origins.
 
 ## 7. Configure the first academic context
 
@@ -147,8 +163,15 @@ Use synthetic accounts and files:
 10. submit, begin review, request changes, resubmit, and approve a registration;
 11. confirm one permanent `ONYX/0001` identifier, Student, guardian links, medical profile where applicable, and initial Enrollment are created atomically;
 12. verify the approved student's dashboard/profile and the Admin student directory;
-13. restart the API and verify sessions, database readiness, and document access again;
-14. inspect logs to ensure passwords, tokens, Cloudinary signatures, medical data, and document content are absent.
+13. invite or create a teacher, complete setup and approval, assign a subject/class/session, and verify that unassigned academic resources remain inaccessible;
+14. publish an assignment with a protected attachment and verify that only an eligible student can read and download it;
+15. publish scoped and school-wide announcements and verify each role receives only the intended audience;
+16. configure assessment and grading schemes, enter explicit SCORED/ABSENT/EXEMPT states, submit, review with a different user, approve, publish, and download the immutable student report-card PDF;
+17. verify the published-result correction workflow produces a new report snapshot and preserves the superseded one;
+18. exercise promotion/repeat/withdraw/transfer/graduate behavior with synthetic records and confirm enrollment history is never overwritten;
+19. verify notification ownership, session revocation, permission changes, and medical-data restrictions;
+20. restart the API and verify sessions, database readiness, and document access again;
+21. inspect logs to ensure passwords, tokens, Cloudinary signatures, medical data, and document content are absent.
 
 Run a credentialed Cloudinary replacement/removal test and verify MongoDB metadata and provider state remain consistent.
 
@@ -162,7 +185,7 @@ Before real intake:
 - verify Atlas backups and perform a restore rehearsal;
 - configure actionable uptime/error alerts and log retention;
 - document secret rotation, session revocation, storage outage, and rollback procedures;
-- keep Render on an always-on production plan;
+- treat Render Free as a pilot/low-traffic deployment with cold starts and no uptime guarantee; upgrade to an always-on production plan before the portal becomes operationally critical;
 - keep Render automatic deploys behind the successful GitHub CI check and protect the production branch from unchecked direct pushes.
 
 Rollback the web and API only to versions compatible with the current database shape. Never roll back by deleting academic, registration, audit, or document history.

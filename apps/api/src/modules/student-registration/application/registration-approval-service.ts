@@ -116,23 +116,36 @@ export class RegistrationApprovalService {
       throw new ConflictError('The possible duplicate must be resolved before approval.');
 
     return mongoose.connection.transaction(async (session) => {
-      const [academicSession, classLevel, track, requirements, studentRole, settings] =
-        await Promise.all([
-          AcademicSessionModel.findOne({ _id: input.academicSessionId, status: 'ACTIVE' })
-            .session(session)
-            .lean(),
-          ClassLevelModel.findOne({ _id: input.classLevelId, status: 'ACTIVE' })
-            .session(session)
-            .lean(),
-          input.trackId === undefined
-            ? Promise.resolve(null)
-            : TrackModel.findOne({ _id: input.trackId, status: 'ACTIVE' }).session(session).lean(),
-          DocumentRequirementModel.find({ active: true, requiredForRegistration: true })
-            .session(session)
-            .lean(),
-          RoleModel.findOne({ code: 'STUDENT', status: 'ACTIVE' }).session(session).lean(),
-          SchoolSettingsModel.findOne({ singletonKey: 'SCHOOL' }).session(session).lean(),
-        ]);
+      const academicSession = await AcademicSessionModel.findOne({
+        _id: input.academicSessionId,
+        status: 'ACTIVE',
+      })
+        .session(session)
+        .lean();
+      const classLevel = await ClassLevelModel.findOne({
+        _id: input.classLevelId,
+        status: 'ACTIVE',
+      })
+        .session(session)
+        .lean();
+      const track =
+        input.trackId === undefined
+          ? null
+          : await TrackModel.findOne({ _id: input.trackId, status: 'ACTIVE' })
+              .session(session)
+              .lean();
+      const requirements = await DocumentRequirementModel.find({
+        active: true,
+        requiredForRegistration: true,
+      })
+        .session(session)
+        .lean();
+      const studentRole = await RoleModel.findOne({ code: 'STUDENT', status: 'ACTIVE' })
+        .session(session)
+        .lean();
+      const settings = await SchoolSettingsModel.findOne({ singletonKey: 'SCHOOL' })
+        .session(session)
+        .lean();
       if (
         academicSession === null ||
         classLevel === null ||
