@@ -181,7 +181,10 @@ export function createStudentOnboardingRouter(dependencies: {
   router.post(
     '/student-signups',
     trustedOrigin,
-    limiter(dependencies.environment.AUTH_RATE_LIMIT_WINDOW_SECONDS, 5),
+    limiter(
+      dependencies.environment.AUTH_RATE_LIMIT_WINDOW_SECONDS,
+      dependencies.environment.STUDENT_SIGNUP_RATE_LIMIT_MAX,
+    ),
     validateBody(signupSchema),
     async (request, response) => {
       const body = signupSchema.parse(request.body);

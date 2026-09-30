@@ -27,6 +27,7 @@ const environmentSchema = z
     AUTH_MAX_FAILED_ATTEMPTS: z.coerce.number().int().min(3).max(100).default(8),
     AUTH_RATE_LIMIT_WINDOW_SECONDS: z.coerce.number().int().min(60).max(86_400).default(900),
     AUTH_REFRESH_RATE_LIMIT_MAX: z.coerce.number().int().min(1).max(1_000).default(30),
+    STUDENT_SIGNUP_RATE_LIMIT_MAX: z.coerce.number().int().min(1).max(1_000).default(5),
     AUTH_REFRESH_REPLAY_GRACE_SECONDS: z.coerce.number().int().min(1).max(30).default(8),
     AUTH_REFRESH_TOKEN_PEPPER: z
       .string()

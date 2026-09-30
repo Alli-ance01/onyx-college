@@ -30,6 +30,7 @@ export const errorHandler: ErrorRequestHandler = (error, request, response, _nex
   if (normalized.statusCode >= 500) {
     request.log.error(
       {
+        err: error,
         errorType: error instanceof Error ? error.name : 'UnknownError',
         requestId: request.requestId,
       },

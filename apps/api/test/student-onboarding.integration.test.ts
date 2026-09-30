@@ -19,7 +19,7 @@ import { StudentModel } from '../src/modules/students/infrastructure/student-mod
 import { SequenceCounterModel } from '../src/modules/system/infrastructure/system-models.js';
 
 const origin = 'http://localhost:5173';
-const logger = pino({ enabled: false });
+const logger = pino({ level: 'error' });
 let container: StartedMongoDBContainer | undefined;
 let app: ReturnType<typeof createApp>;
 let adminAccessToken: string;
@@ -78,6 +78,7 @@ beforeAll(async () => {
   });
   const environment = loadEnvironment({
     AUTH_LOGIN_RATE_LIMIT_MAX: '100',
+    STUDENT_SIGNUP_RATE_LIMIT_MAX: '100',
     DOCUMENT_STORAGE_LOCAL_PATH: '.data/test-private-uploads',
     MONGODB_URI: connectionString,
     NODE_ENV: 'test',

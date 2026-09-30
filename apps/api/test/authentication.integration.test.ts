@@ -15,7 +15,7 @@ import { PasswordService } from '../src/modules/identity/infrastructure/password
 import { UserModel } from '../src/modules/identity/infrastructure/user-model.js';
 
 const origin = 'http://localhost:5173';
-const logger = pino({ enabled: false });
+const logger = pino({ level: 'error' });
 let container: StartedMongoDBContainer | undefined;
 let app: ReturnType<typeof createApp>;
 let temporaryPassword: string;
