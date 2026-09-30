@@ -172,10 +172,8 @@ export function AuthSessionProvider({ children, fetchImplementation }: AuthSessi
 
   const changePassword = useCallback(
     async (input: PasswordChange) => {
-      const csrfToken = credentials.getCsrfToken();
-      if (csrfToken === null) {
-        throw new Error('The authenticated browser session is missing CSRF state.');
-      }
+      let csrfToken = credentials.getCsrfToken();
+      csrfToken ??= await fetchCsrf();
       const envelope = await apiClient.request<SuccessEnvelope<AuthTokensResponse>>(
         '/auth/change-password',
         {
@@ -186,7 +184,7 @@ export function AuthSessionProvider({ children, fetchImplementation }: AuthSessi
       );
       acceptAuthentication(envelope.data);
     },
-    [acceptAuthentication, apiClient, credentials],
+    [acceptAuthentication, apiClient, credentials, fetchCsrf],
   );
 
   const logout = useCallback(async () => {

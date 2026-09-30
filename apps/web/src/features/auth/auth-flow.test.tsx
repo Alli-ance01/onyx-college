@@ -104,4 +104,46 @@ describe('browser authentication lifecycle', () => {
       expect(fetchMock).toHaveBeenCalledTimes(2);
     });
   });
+
+  it('waits for the initial session check before allowing a new login', async () => {
+    let finishSessionCheck!: (response: Response) => void;
+    const pendingSessionCheck = new Promise<Response>((resolve) => {
+      finishSessionCheck = resolve;
+    });
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockReturnValueOnce(pendingSessionCheck)
+      .mockResolvedValueOnce(
+        jsonResponse(
+          {
+            error: {
+              code: 'AUTHENTICATION_REQUIRED',
+              message: 'Authentication is required.',
+              requestId: 'req_test',
+            },
+          },
+          401,
+        ),
+      );
+
+    renderApp('/auth/login', fetchMock);
+
+    expect(await screen.findByText('Checking your secure session…')).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Sign in' })).not.toBeInTheDocument();
+
+    finishSessionCheck(
+      jsonResponse(
+        {
+          error: {
+            code: 'AUTHENTICATION_REQUIRED',
+            message: 'Authentication is required.',
+            requestId: 'req_test',
+          },
+        },
+        401,
+      ),
+    );
+
+    expect(await screen.findByRole('button', { name: 'Sign in' })).toBeVisible();
+  });
 });

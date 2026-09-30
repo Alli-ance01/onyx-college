@@ -59,6 +59,9 @@ export function LoginPage() {
     register,
   } = useForm<LoginFields>({ resolver: zodResolver(loginSchema) });
 
+  if (auth.status === 'checking')
+    return <main className="route-status">Checking your secure session…</main>;
+
   if (auth.status === 'authenticated') {
     return (
       <Navigate
