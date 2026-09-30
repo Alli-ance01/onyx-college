@@ -150,6 +150,18 @@ export function ChangePasswordPage() {
       await auth.changePassword(fields);
       await navigate(portalPath(auth.principal.portal), { replace: true });
     } catch (error) {
+      const diagnostic =
+        error instanceof ApiClientError
+          ? {
+              code: error.code,
+              message: error.message,
+              requestId: error.requestId,
+              status: error.status,
+            }
+          : error instanceof Error
+            ? { message: error.message, name: error.name }
+            : { type: typeof error };
+      console.error('[Onyx auth] Password change failed', diagnostic);
       setSubmissionError(errorMessage(error));
     }
   });

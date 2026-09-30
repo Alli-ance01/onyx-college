@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
@@ -28,6 +28,7 @@ function jsonResponse(body: unknown, status = 200): Response {
 }
 
 function renderApp(initialEntry: string, fetchImplementation: typeof fetch) {
+  cleanup();
   const router = createMemoryRouter(appRoutes, { initialEntries: [initialEntry] });
   render(
     <QueryClientProvider client={createQueryClient()}>
@@ -145,5 +146,72 @@ describe('browser authentication lifecycle', () => {
     );
 
     expect(await screen.findByRole('button', { name: 'Sign in' })).toBeVisible();
+  });
+
+  it('logs safe diagnostics when password change fails before an API response', async () => {
+    const temporaryPrincipal = { ...principal, mustChangePassword: true };
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(
+        jsonResponse(
+          {
+            error: {
+              code: 'AUTHENTICATION_REQUIRED',
+              message: 'Authentication is required.',
+              requestId: 'req_test',
+            },
+          },
+          401,
+        ),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          data: {
+            accessToken: 'memory-access-token',
+            csrfToken: 'csrf',
+            expiresInSeconds: 600,
+            principal: temporaryPrincipal,
+          },
+        }),
+      )
+      .mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    try {
+      renderApp('/auth/login', fetchMock);
+      fireEvent.change(await screen.findByLabelText('Username, email, or phone'), {
+        target: { value: 'super.admin' },
+      });
+      fireEvent.change(screen.getByLabelText('Password'), {
+        target: { value: 'temporary-secret' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+
+      expect(await screen.findByRole('heading', { name: 'Change your password' })).toBeVisible();
+      fireEvent.change(screen.getByLabelText('Current password'), {
+        target: { value: 'temporary-secret' },
+      });
+      fireEvent.change(screen.getByLabelText('New password'), {
+        target: { value: 'a-secure-new-password-2026' },
+      });
+      fireEvent.change(screen.getByLabelText('Confirm new password'), {
+        target: { value: 'a-secure-new-password-2026' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Update password' }));
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'The request could not be completed. Please try again.',
+      );
+      await waitFor(() => {
+        expect(consoleError).toHaveBeenCalledWith('[Onyx auth] Password change failed', {
+          message: 'Failed to fetch',
+          name: 'TypeError',
+        });
+      });
+      expect(JSON.stringify(consoleError.mock.calls)).not.toContain('temporary-secret');
+      expect(JSON.stringify(consoleError.mock.calls)).not.toContain('a-secure-new-password-2026');
+    } finally {
+      consoleError.mockRestore();
+    }
   });
 });
