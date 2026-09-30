@@ -130,7 +130,7 @@ describe('student onboarding visible flows', () => {
       </QueryClientProvider>,
     );
     expect(
-      await screen.findByRole('heading', { name: 'Create your applicant account' }),
+      await screen.findByRole('heading', { name: 'Create your applicant account.' }),
     ).toBeVisible();
     expect(screen.getByRole('button', { name: 'Create account and continue' })).toBeVisible();
     expect(screen.queryByText(/teacher signup/iu)).not.toBeInTheDocument();

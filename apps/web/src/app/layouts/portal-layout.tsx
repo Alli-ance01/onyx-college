@@ -388,12 +388,16 @@ export function PortalLayout({ portalName }: PortalLayoutProps) {
   useEffect(() => {
     if (!navigationOpen) return undefined;
 
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setNavigationOpen(false);
     };
 
     document.addEventListener('keydown', closeOnEscape);
     return () => {
+      document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', closeOnEscape);
     };
   }, [navigationOpen]);
@@ -408,7 +412,7 @@ export function PortalLayout({ portalName }: PortalLayoutProps) {
         }}
         type="button"
       />
-      <aside className="portal-sidebar" id="portal-navigation">
+      <aside aria-label={`${portalName} menu`} className="portal-sidebar" id="portal-navigation">
         <div className="portal-sidebar__brand">
           <Link className="brand brand--inverse" to="/" aria-label="Onyx College Portal home">
             <span className="brand__mark" aria-hidden="true">
