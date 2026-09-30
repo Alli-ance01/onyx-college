@@ -63,15 +63,23 @@ function authentication(response: request.Response): { accessToken: string; csrf
   return { accessToken: stringAt(data, 'accessToken'), csrfToken: stringAt(data, 'csrfToken') };
 }
 
+function replicaSetConnectionString(startedContainer: StartedMongoDBContainer): string {
+  const connectionString = new URL(startedContainer.getConnectionString());
+  connectionString.searchParams.set('directConnection', 'true');
+  connectionString.searchParams.set('replicaSet', 'rs0');
+  return connectionString.toString();
+}
+
 beforeAll(async () => {
   container = await new MongoDBContainer('mongo:8.0').start();
-  await mongoose.connect(container.getConnectionString(), {
+  const connectionString = replicaSetConnectionString(container);
+  await mongoose.connect(connectionString, {
     dbName: 'onyx_onboarding_integration',
   });
   const environment = loadEnvironment({
     AUTH_LOGIN_RATE_LIMIT_MAX: '100',
     DOCUMENT_STORAGE_LOCAL_PATH: '.data/test-private-uploads',
-    MONGODB_URI: container.getConnectionString(),
+    MONGODB_URI: connectionString,
     NODE_ENV: 'test',
     WEB_ORIGIN: origin,
   });

@@ -43,13 +43,21 @@ function runningContainer(): StartedMongoDBContainer {
   return container;
 }
 
+function replicaSetConnectionString(startedContainer: StartedMongoDBContainer): string {
+  const connectionString = new URL(startedContainer.getConnectionString());
+  connectionString.searchParams.set('directConnection', 'true');
+  connectionString.searchParams.set('replicaSet', 'rs0');
+  return connectionString.toString();
+}
+
 beforeAll(async () => {
   container = await new MongoDBContainer('mongo:8.0').start();
-  await mongoose.connect(container.getConnectionString(), { dbName: 'onyx_auth_integration' });
+  const connectionString = replicaSetConnectionString(container);
+  await mongoose.connect(connectionString, { dbName: 'onyx_auth_integration' });
   const environment = loadEnvironment({
     AUTH_LOGIN_RATE_LIMIT_MAX: '100',
     AUTH_REFRESH_REPLAY_GRACE_SECONDS: '1',
-    MONGODB_URI: container.getConnectionString(),
+    MONGODB_URI: connectionString,
     NODE_ENV: 'test',
     WEB_ORIGIN: origin,
   });
@@ -72,7 +80,7 @@ afterAll(async () => {
 describe('authentication and access integration', () => {
   it('refuses duplicate initial SUPER_ADMIN bootstrap', async () => {
     const environment = loadEnvironment({
-      MONGODB_URI: runningContainer().getConnectionString(),
+      MONGODB_URI: replicaSetConnectionString(runningContainer()),
       NODE_ENV: 'test',
       WEB_ORIGIN: origin,
     });
