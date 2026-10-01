@@ -57,7 +57,9 @@ describe('browser authentication lifecycle', () => {
 
     renderApp('/admin', fetchMock);
 
-    expect(await screen.findByRole('heading', { name: 'School operations' })).toBeVisible();
+    expect(
+      await screen.findByRole('heading', { name: 'Good day, System Administrator' }),
+    ).toBeVisible();
     expect(screen.getByText('System Administrator')).toBeVisible();
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(fetchMock.mock.calls[1]?.[1]).toMatchObject({

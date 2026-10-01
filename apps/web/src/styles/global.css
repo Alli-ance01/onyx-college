@@ -3858,3 +3858,650 @@ h3 {
     transition: none;
   }
 }
+
+/* Institutional school portal refresh ------------------------------------ */
+:root {
+  --color-ink: #17324d;
+  --color-navy-950: #17324d;
+  --color-navy-900: #214764;
+  --color-navy-800: #2d668f;
+  --color-ochre: #2d668f;
+  --color-amber-500: #2d668f;
+  --color-amber-600: #245675;
+  --color-amber-100: #e9f1f7;
+  --color-chalk: #f5f7fa;
+  --color-paper: #ffffff;
+  --color-line: #d8e0e8;
+  --shadow-subtle: 0 1px 3px rgb(23 50 77 / 8%);
+  --shadow-raised: 0 10px 26px rgb(23 50 77 / 12%);
+  --radius-sm: 0.3rem;
+  --radius-md: 0.45rem;
+}
+
+body {
+  color: #24384c;
+  background: var(--color-chalk);
+}
+
+.brand__mark {
+  border-radius: 0.25rem;
+  background: var(--color-navy-900);
+  color: #fff;
+}
+
+.public-shell {
+  background: #fff;
+}
+
+.public-header {
+  min-height: 4.75rem;
+  padding-block: 0.85rem;
+  border-bottom-color: #d8e0e8;
+  box-shadow: 0 1px 0 rgb(23 50 77 / 3%);
+}
+
+.public-nav {
+  align-items: center;
+  gap: 1.5rem;
+  font-size: 0.82rem;
+}
+
+.public-nav a {
+  color: #536a7f;
+}
+
+.public-nav a.active,
+.public-nav a:hover {
+  color: var(--color-navy-900);
+}
+
+.public-nav .public-nav__cta {
+  padding: 0.55rem 0.9rem;
+  border: 1px solid var(--color-navy-900);
+  border-radius: 0.3rem;
+  color: #fff;
+  background: var(--color-navy-900);
+}
+
+.public-nav .public-nav__cta:hover {
+  color: #fff;
+  background: var(--color-navy-800);
+}
+
+.public-content {
+  padding-block: clamp(2.75rem, 7vw, 5.5rem);
+}
+
+.school-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(18rem, 0.7fr);
+  gap: clamp(2rem, 7vw, 7rem);
+  align-items: center;
+  padding-block: clamp(1rem, 4vw, 3rem) clamp(3rem, 8vw, 6rem);
+  border-bottom: 1px solid var(--color-line);
+}
+
+.school-hero__copy h1 {
+  max-width: 13ch;
+  margin: 0.65rem 0 1.2rem;
+  color: var(--color-ink);
+  font-size: clamp(2.5rem, 5.5vw, 4.6rem);
+  font-weight: 700;
+  letter-spacing: -0.055em;
+  line-height: 1.02;
+}
+
+.school-hero__summary {
+  max-width: 58ch;
+  margin: 0;
+  color: #5c7084;
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+.school-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  align-items: center;
+  margin-top: 2rem;
+}
+
+.school-hero__actions .button-link {
+  min-height: 2.9rem;
+  border-radius: 0.3rem;
+  background: var(--color-navy-900);
+}
+
+.school-hero__notice {
+  padding: 1.6rem;
+  border: 1px solid var(--color-line);
+  border-top: 3px solid var(--color-navy-900);
+  border-radius: 0.35rem;
+  background: #f8fafc;
+}
+
+.school-hero__notice h2 {
+  margin: 0.65rem 0 0.8rem;
+  color: var(--color-ink);
+  font-size: 1.35rem;
+  line-height: 1.2;
+}
+
+.school-hero__notice p:last-child {
+  margin: 0;
+  color: #607487;
+  font-size: 0.88rem;
+  line-height: 1.65;
+}
+
+.school-links {
+  display: grid;
+  grid-template-columns: minmax(13rem, 0.65fr) minmax(0, 1.35fr);
+  gap: 2rem;
+  padding-block: clamp(2.5rem, 6vw, 4.5rem);
+  border-bottom: 1px solid var(--color-line);
+}
+
+.school-links h2 {
+  margin: 0.55rem 0 0;
+  color: var(--color-ink);
+  font-size: 1.55rem;
+  line-height: 1.15;
+}
+
+.school-links__grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.school-link-card {
+  display: grid;
+  grid-template-columns: 2.2rem minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: center;
+  padding: 1.1rem 1.2rem;
+  border: 1px solid var(--color-line);
+  border-radius: 0.3rem;
+  color: inherit;
+  text-decoration: none;
+  transition:
+    border-color var(--transition-fast),
+    background var(--transition-fast);
+}
+
+.school-link-card:hover {
+  border-color: #91aec4;
+  background: #f8fafc;
+}
+
+.school-link-card__number {
+  color: var(--color-navy-800);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.school-link-card strong,
+.school-link-card small {
+  display: block;
+}
+
+.school-link-card strong {
+  color: var(--color-ink);
+  font-size: 0.9rem;
+}
+
+.school-link-card small {
+  margin-top: 0.25rem;
+  color: #697d90;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.school-link-card > span:last-child {
+  color: var(--color-navy-800);
+  font-size: 1.1rem;
+}
+
+.school-information {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-block: 1.6rem;
+  color: #617589;
+  font-size: 0.78rem;
+}
+
+.school-information div {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.school-information strong {
+  color: var(--color-ink);
+}
+
+.school-information a {
+  align-self: center;
+  font-weight: 700;
+}
+
+.public-footer {
+  grid-template-columns: 1fr 1fr auto;
+  padding-block: 1.6rem;
+  border-top-color: var(--color-line);
+  background: #f8fafc;
+}
+
+.public-footer > div {
+  color: var(--color-ink);
+}
+
+.portal-shell {
+  grid-template-columns: 15.5rem minmax(0, 1fr);
+  background: var(--color-chalk);
+}
+
+.portal-sidebar {
+  background: var(--color-navy-950);
+}
+
+.portal-nav-section {
+  color: #9aafc1;
+  font-size: 0.64rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.portal-nav-item {
+  border-left-width: 3px;
+  border-radius: 0.2rem;
+  color: #c6d3df;
+}
+
+.portal-nav-item--active {
+  border-left-color: #84b1d0;
+  color: #fff;
+  background: rgb(132 177 208 / 17%);
+}
+
+.portal-nav-item__icon {
+  border-color: rgb(198 211 223 / 28%);
+  border-radius: 0.2rem;
+}
+
+.portal-nav-item--active .portal-nav-item__icon {
+  border-color: #84b1d0;
+  color: #b9d6e9;
+}
+
+.portal-header {
+  min-height: 4.5rem;
+  background: #fff;
+  box-shadow: 0 1px 0 rgb(23 50 77 / 5%);
+}
+
+.portal-header__portal {
+  color: #71869a;
+  font-size: 0.64rem;
+}
+
+.portal-header__context {
+  color: var(--color-ink);
+  font-family: inherit;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.portal-header__status {
+  color: #62778b;
+}
+
+.portal-content {
+  width: min(100% - 2 * clamp(1rem, 3.5vw, 3rem), 86rem);
+  padding-block: clamp(1.5rem, 3vw, 2.75rem) 4rem;
+}
+
+.ui-page-header {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.ui-page-header h1,
+.page-heading h1 {
+  color: var(--color-ink);
+  font-family: inherit;
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+}
+
+.ui-page-header p:not(.eyebrow),
+.page-heading p:not(.eyebrow) {
+  color: #63778a;
+  font-size: 0.86rem;
+}
+
+.ui-panel,
+.surface,
+.ui-table-wrap {
+  border-color: var(--color-line);
+  border-radius: 0.35rem;
+  box-shadow: 0 1px 3px rgb(23 50 77 / 6%);
+}
+
+.ui-panel__header {
+  padding: 1rem 1.15rem;
+  background: #fbfcfd;
+}
+
+.ui-panel__header h2 {
+  font-size: 0.95rem;
+}
+
+.ui-panel__body {
+  padding: 1.15rem;
+}
+
+.ui-button,
+.primary-button,
+.button-link {
+  border-radius: 0.3rem;
+}
+
+.ui-table {
+  min-width: 46rem;
+}
+
+.ui-table th {
+  color: #526a7e;
+  background: #f5f8fa;
+  font-size: 0.67rem;
+}
+
+.ui-table td {
+  color: #2c4357;
+}
+
+.ui-table tbody tr:hover {
+  background: #f8fbfd;
+}
+
+/* Admin home */
+.admin-context-bar {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  margin-bottom: 2rem;
+  border: 1px solid var(--color-line);
+  border-radius: 0.35rem;
+  background: var(--color-line);
+}
+
+.admin-context-bar > div {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.9rem 1rem;
+  background: #fff;
+}
+
+.admin-context-bar span,
+.admin-metric-card span,
+.admin-metric-card small {
+  color: #6a7d8f;
+  font-size: 0.7rem;
+}
+
+.admin-context-bar strong {
+  color: var(--color-ink);
+  font-size: 0.86rem;
+}
+
+.admin-section-heading {
+  margin-bottom: 0.75rem;
+}
+
+.admin-section-heading h2 {
+  margin: 0.25rem 0 0;
+  color: var(--color-ink);
+  font-size: 1.15rem;
+}
+
+.admin-metric-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 2rem;
+}
+
+.admin-metric-card {
+  display: grid;
+  gap: 0.45rem;
+  min-height: 8.5rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--color-line);
+  border-radius: 0.35rem;
+  color: inherit;
+  background: #fff;
+  text-decoration: none;
+  box-shadow: 0 1px 3px rgb(23 50 77 / 5%);
+  transition:
+    border-color var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.admin-metric-card:hover {
+  border-color: #91aec4;
+  transform: translateY(-1px);
+}
+
+.admin-metric-card strong {
+  color: var(--color-ink);
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.admin-metric-card small {
+  color: var(--color-navy-800);
+  font-weight: 700;
+}
+
+.admin-metric-card--attention {
+  border-top: 3px solid #bb7e28;
+}
+
+.admin-dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(18rem, 0.8fr);
+  gap: 1rem;
+}
+
+.admin-queue-list,
+.admin-shortcut-list {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.admin-queue-list > a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid #e7edf2;
+  color: inherit;
+  text-decoration: none;
+}
+
+.admin-queue-list > a:last-child {
+  border-bottom: 0;
+}
+
+.admin-queue-list > a:hover strong,
+.admin-shortcut-list > a:hover {
+  color: var(--color-navy-800);
+}
+
+.admin-queue-list strong,
+.admin-queue-list small {
+  display: block;
+}
+
+.admin-queue-list strong {
+  color: var(--color-ink);
+  font-size: 0.84rem;
+}
+
+.admin-queue-list small {
+  margin-top: 0.2rem;
+  color: #728497;
+  font-size: 0.74rem;
+}
+
+.admin-queue-list > a > span:last-child {
+  color: var(--color-navy-800);
+  font-size: 1.1rem;
+}
+
+.admin-shortcut-list > a {
+  padding: 0.65rem 0;
+  border-bottom: 1px solid #e7edf2;
+  color: var(--color-ink);
+  font-size: 0.84rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.admin-shortcut-list > a:last-child {
+  border-bottom: 0;
+}
+
+@media (max-width: 60rem) {
+  .portal-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .portal-sidebar {
+    width: min(19rem, calc(100vw - 2rem));
+  }
+
+  .admin-dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 48rem) {
+  .school-hero,
+  .school-links {
+    grid-template-columns: 1fr;
+  }
+
+  .school-hero {
+    gap: 2rem;
+  }
+
+  .school-hero__copy h1 {
+    max-width: 16ch;
+    font-size: clamp(2.4rem, 11vw, 3.7rem);
+  }
+
+  .school-information,
+  .public-footer {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
+
+  .school-information a,
+  .public-footer small {
+    text-align: left;
+  }
+
+  .admin-context-bar,
+  .admin-metric-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-context-bar > div {
+    padding-block: 0.75rem;
+  }
+
+  .ui-page-header {
+    gap: 1rem;
+  }
+
+  .ui-page-header__actions,
+  .ui-page-header__actions > * {
+    width: 100%;
+  }
+
+  .ui-table-wrap {
+    border: 0;
+    box-shadow: none;
+    overflow: visible;
+  }
+
+  .ui-table {
+    min-width: 0;
+    display: block;
+  }
+
+  .ui-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .ui-table tbody,
+  .ui-table tr,
+  .ui-table td {
+    display: block;
+  }
+
+  .ui-table tr {
+    margin-bottom: 0.8rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--color-line);
+    border-radius: 0.35rem;
+    background: #fff;
+    box-shadow: 0 1px 3px rgb(23 50 77 / 5%);
+  }
+
+  .ui-table td {
+    display: grid;
+    grid-template-columns: minmax(6.5rem, 0.42fr) minmax(0, 1fr);
+    gap: 0.7rem;
+    padding: 0.55rem 0;
+    border-bottom: 1px solid #edf1f4;
+    text-align: left;
+  }
+
+  .ui-table td:last-child {
+    border-bottom: 0;
+  }
+
+  .ui-table td::before {
+    color: #75889a;
+    content: attr(data-label);
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+
+  .ui-table td[data-label='']::before {
+    content: '';
+  }
+
+  .toolbar {
+    align-items: stretch;
+  }
+
+  .toolbar > *,
+  .toolbar input,
+  .toolbar select {
+    width: 100%;
+  }
+}

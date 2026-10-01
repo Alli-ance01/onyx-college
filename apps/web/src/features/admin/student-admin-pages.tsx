@@ -115,32 +115,32 @@ export function AdminRegistrationQueuePage() {
           <tbody>
             {query.data?.map((registration) => (
               <tr key={registration.id}>
-                <td>
+                <td data-label="Applicant">
                   <strong>
                     {registration.data.personal.firstName} {registration.data.personal.surname}
                   </strong>
                   <small>{registration.data.guardian.phone}</small>
                 </td>
-                <td>
+                <td data-label="Requested placement">
                   {registration.data.academic.requestedClassLevelCode ?? '—'}{' '}
                   {registration.data.academic.requestedTrackCode ?? ''}
                 </td>
-                <td>
+                <td data-label="Status">
                   <span className="status-badge">{registration.status.replaceAll('_', ' ')}</span>
                 </td>
-                <td>
+                <td data-label="Duplicate review">
                   {registration.duplicateReview.requiresReview ? (
                     <span className="warning-text">Review required</span>
                   ) : (
                     'Clear'
                   )}
                 </td>
-                <td>
+                <td data-label="Submitted">
                   {registration.submittedAt === undefined
                     ? 'Not submitted'
                     : new Date(registration.submittedAt).toLocaleDateString()}
                 </td>
-                <td>
+                <td data-label="">
                   <Link to={`/admin/students/registrations/${registration.id}`}>Open review</Link>
                 </td>
               </tr>

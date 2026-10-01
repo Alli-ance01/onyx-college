@@ -59,7 +59,11 @@ export function DataTable<Row>({
           {rows.map((row) => (
             <tr key={getRowKey(row)}>
               {columns.map((column) => (
-                <td className={`ui-table__cell--${column.align ?? 'start'}`} key={column.id}>
+                <td
+                  className={`ui-table__cell--${column.align ?? 'start'}`}
+                  data-label={column.header}
+                  key={column.id}
+                >
                   {column.render(row)}
                 </td>
               ))}
