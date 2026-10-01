@@ -51,75 +51,130 @@ export function AdminDashboardPage() {
   const resultAttention =
     batches.data?.filter((item) => ['SUBMITTED', 'UNDER_REVIEW', 'APPROVED'].includes(item.status))
       .length ?? 0;
+
   return (
-    <main className="portal-content product-page">
+    <main className="portal-content product-page admin-dashboard">
       <PageHeader
-        description="Live operational context and permission-relevant queues."
-        eyebrow="Admin Portal"
-        title="School operations"
+        description="A summary of the school areas that need attention today."
+        eyebrow="Administration"
+        title={`Good day, ${auth.principal?.displayName ?? 'Administrator'}`}
       />
-      <div className="metric-grid">
-        <Panel title="Academic session">
-          <strong className="metric-value metric-value--text">
-            {activeSession?.label ?? 'Not active'}
+      <section className="admin-context-bar" aria-label="Current academic context">
+        <div>
+          <span>Current academic session</span>
+          <strong>{activeSession?.label ?? 'No active session'}</strong>
+        </div>
+        <div>
+          <span>Current term</span>
+          <strong>
+            {activeSession?.terms.find((item) => item.status === 'ACTIVE')?.name ??
+              'No active term'}
           </strong>
-        </Panel>
-        {permissions.has('teachers.read') ? (
-          <Panel title="Teachers">
-            <strong className="metric-value">{teachers.data?.length ?? 0}</strong>
-          </Panel>
-        ) : null}
-        {permissions.has('teachers.approve') ? (
-          <Panel title="Pending teachers">
-            <strong className="metric-value">{pendingTeachers}</strong>
-          </Panel>
-        ) : null}
-        {permissions.has('results.read_all') || permissions.has('results.review') ? (
-          <Panel title="Results needing action">
-            <strong className="metric-value">{resultAttention}</strong>
-          </Panel>
-        ) : null}
-      </div>
-      <div className="content-grid content-grid--two">
-        <Panel title="Action queues">
-          <div className="action-list">
+        </div>
+        <div>
+          <span>Signed in as</span>
+          <strong>{auth.principal?.roles.join(', ') ?? 'Administrator'}</strong>
+        </div>
+      </section>
+      <section aria-labelledby="admin-overview-title">
+        <div className="admin-section-heading">
+          <div>
+            <p className="eyebrow">At a glance</p>
+            <h2 id="admin-overview-title">School overview</h2>
+          </div>
+        </div>
+        <div className="metric-grid admin-metric-grid">
+          {permissions.has('teachers.read') ? (
+            <Link className="admin-metric-card" to="/admin/teachers">
+              <span>Teachers</span>
+              <strong>{teachers.data?.length ?? 0}</strong>
+              <small>View staff directory →</small>
+            </Link>
+          ) : null}
+          {permissions.has('teachers.approve') ? (
+            <Link
+              className="admin-metric-card admin-metric-card--attention"
+              to="/admin/teachers/approvals"
+            >
+              <span>Pending teacher approvals</span>
+              <strong>{pendingTeachers}</strong>
+              <small>Review requests →</small>
+            </Link>
+          ) : null}
+          {permissions.has('results.read_all') || permissions.has('results.review') ? (
+            <Link className="admin-metric-card" to="/admin/results">
+              <span>Results needing action</span>
+              <strong>{resultAttention}</strong>
+              <small>Open result overview →</small>
+            </Link>
+          ) : null}
+        </div>
+      </section>
+      <section className="admin-dashboard-grid" aria-label="Administrative work queues">
+        <Panel
+          className="admin-queue-panel"
+          description="Open the next queue that needs a decision or review."
+          title="Work queues"
+        >
+          <div className="admin-queue-list">
             {permissions.has('students.approve_registration') ? (
-              <Link className="ui-button ui-button--secondary" to="/admin/students/registrations">
-                Registration review
+              <Link to="/admin/students/registrations">
+                <span>
+                  <strong>Registration review</strong>
+                  <small>Review student applications and decisions</small>
+                </span>
+                <span aria-hidden="true">→</span>
               </Link>
             ) : null}
             {permissions.has('teachers.approve') ? (
-              <Link className="ui-button ui-button--secondary" to="/admin/teachers/approvals">
-                Teacher approvals
+              <Link to="/admin/teachers/approvals">
+                <span>
+                  <strong>Teacher approvals</strong>
+                  <small>Approve or reject pending staff registrations</small>
+                </span>
+                <span aria-hidden="true">→</span>
               </Link>
             ) : null}
             {permissions.has('results.review') ? (
-              <Link className="ui-button ui-button--secondary" to="/admin/results/review">
-                Result review
+              <Link to="/admin/results/review">
+                <span>
+                  <strong>Result review</strong>
+                  <small>Review submitted academic results</small>
+                </span>
+                <span aria-hidden="true">→</span>
               </Link>
+            ) : null}
+            {!permissions.has('students.approve_registration') &&
+            !permissions.has('teachers.approve') &&
+            !permissions.has('results.review') ? (
+              <p className="muted">There are no review queues assigned to this account.</p>
             ) : null}
           </div>
         </Panel>
-        <Panel title="System status">
-          <dl className="detail-list">
-            <div>
-              <dt>Current term</dt>
-              <dd>
-                {activeSession?.terms.find((item) => item.status === 'ACTIVE')?.name ??
-                  'Not active'}
-              </dd>
-            </div>
-            <div>
-              <dt>Access role</dt>
-              <dd>{auth.principal?.roles.join(', ')}</dd>
-            </div>
-          </dl>
+        <Panel
+          className="admin-queue-panel"
+          description="Common administration tasks for this workspace."
+          title="Shortcuts"
+        >
+          <div className="admin-shortcut-list">
+            {permissions.has('students.read') ? (
+              <Link to="/admin/students">Student directory</Link>
+            ) : null}
+            {permissions.has('teachers.read') ? (
+              <Link to="/admin/teachers">Teacher directory</Link>
+            ) : null}
+            {permissions.has('sessions.manage') ? (
+              <Link to="/admin/academics/sessions">Academic sessions</Link>
+            ) : null}
+            {permissions.has('settings.manage') ? (
+              <Link to="/admin/settings">School settings</Link>
+            ) : null}
+          </div>
         </Panel>
-      </div>
+      </section>
     </main>
   );
 }
-
 export function AdminAdministratorsPage() {
   const auth = useAuthSession();
   const cache = useQueryClient();

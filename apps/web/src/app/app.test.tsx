@@ -16,9 +16,9 @@ describe('application foundation', () => {
     );
 
     expect(
-      await screen.findByRole('heading', { name: 'A clearer way to move through school life.' }),
+      await screen.findByRole('heading', { name: 'One secure portal for your school community' }),
     ).toBeVisible();
     expect(screen.getByRole('navigation', { name: 'Public navigation' })).toBeVisible();
-    expect(screen.getByRole('status')).toHaveTextContent('One secure home');
+    expect(screen.getByRole('link', { name: 'Sign in to the portal' })).toBeVisible();
   });
 });

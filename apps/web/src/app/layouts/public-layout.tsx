@@ -3,14 +3,6 @@ import { NavLink, Outlet } from 'react-router';
 export function PublicLayout() {
   return (
     <div className="public-shell">
-      <div className="public-utility-bar">
-        <div className="public-utility-bar__inner">
-          <span>ONYX COLLEGE · SCHOOL INFORMATION PORTAL</span>
-          <span className="public-utility-bar__status">
-            <i aria-hidden="true" /> Services operational
-          </span>
-        </div>
-      </div>
       <header className="public-header">
         <NavLink className="brand" to="/" aria-label="Onyx College Portal home">
           <span className="brand__mark" aria-hidden="true">
@@ -27,7 +19,7 @@ export function PublicLayout() {
           </NavLink>
           <NavLink to="/student-signup">Student application</NavLink>
           <NavLink className="public-nav__cta" to="/auth/login">
-            Sign in <span aria-hidden="true">↗</span>
+            Sign in
           </NavLink>
         </nav>
       </header>
@@ -39,7 +31,7 @@ export function PublicLayout() {
           </span>
           <strong>Onyx College</strong>
         </div>
-        <p>One secure home for the school community.</p>
+        <p>School information portal</p>
         <small>© {new Date().getFullYear()} Onyx College</small>
       </footer>
     </div>
