@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router';
 
 import { useAuthSession } from '../../lib/auth/use-auth-session.js';
@@ -366,6 +366,7 @@ export function PortalLayout({ portalName }: PortalLayoutProps) {
   const auth = useAuthSession();
   const location = useLocation();
   const [navigationOpen, setNavigationOpen] = useState(false);
+  const sidebar = useRef<HTMLElement>(null);
   const permittedNavigation = useMemo(() => {
     const effectivePermissions = new Set(auth.principal?.permissions ?? []);
 
@@ -383,22 +384,52 @@ export function PortalLayout({ portalName }: PortalLayoutProps) {
 
   const currentItem = permittedNavigation
     .flatMap((group) => group.items)
-    .find((item) => location.pathname === item.to);
+    .filter((item) => location.pathname === item.to || location.pathname.startsWith(`${item.to}/`))
+    .sort((left, right) => right.to.length - left.to.length)[0];
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== 'function') return undefined;
+    const desktop = window.matchMedia('(min-width: 70.001rem)');
+    const closeOnDesktop = () => {
+      if (desktop.matches) setNavigationOpen(false);
+    };
+    desktop.addEventListener('change', closeOnDesktop);
+    return () => {
+      desktop.removeEventListener('change', closeOnDesktop);
+    };
+  }, []);
 
   useEffect(() => {
     if (!navigationOpen) return undefined;
 
     const previousOverflow = document.body.style.overflow;
+    const previousFocus = document.activeElement;
     document.body.style.overflow = 'hidden';
+    sidebar.current?.querySelector<HTMLButtonElement>('.portal-sidebar__close')?.focus();
 
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setNavigationOpen(false);
+      if (event.key === 'Tab') {
+        const focusable = sidebar.current?.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled])',
+        );
+        const first = focusable?.[0];
+        const last = focusable?.[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last?.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first?.focus();
+        }
+      }
     };
 
     document.addEventListener('keydown', closeOnEscape);
     return () => {
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', closeOnEscape);
+      if (previousFocus instanceof HTMLElement) previousFocus.focus();
     };
   }, [navigationOpen]);
 
@@ -411,8 +442,17 @@ export function PortalLayout({ portalName }: PortalLayoutProps) {
           setNavigationOpen(false);
         }}
         type="button"
+        tabIndex={-1}
+        aria-hidden="true"
       />
-      <aside aria-label={`${portalName} menu`} className="portal-sidebar" id="portal-navigation">
+      <aside
+        aria-label={`${portalName} menu`}
+        aria-modal={navigationOpen ? true : undefined}
+        role={navigationOpen ? 'dialog' : undefined}
+        ref={sidebar}
+        className="portal-sidebar"
+        id="portal-navigation"
+      >
         <div className="portal-sidebar__brand">
           <Link className="brand brand--inverse" to="/" aria-label="Onyx College Portal home">
             <span className="brand__mark" aria-hidden="true">
@@ -441,8 +481,8 @@ export function PortalLayout({ portalName }: PortalLayoutProps) {
               <span className="portal-nav-section">{group.label}</span>
               {group.items.map((item) => (
                 <NavLink
-                  className={({ isActive }) =>
-                    `portal-nav-item${isActive ? ' portal-nav-item--active' : ''}`
+                  className={() =>
+                    `portal-nav-item${currentItem?.to === item.to ? ' portal-nav-item--active' : ''}`
                   }
                   end
                   key={item.to}
@@ -476,7 +516,7 @@ export function PortalLayout({ portalName }: PortalLayoutProps) {
         </div>
       </aside>
 
-      <div className="portal-main">
+      <div className="portal-main" inert={navigationOpen}>
         <header className="portal-header">
           <div className="portal-header__leading">
             <button
@@ -501,9 +541,6 @@ export function PortalLayout({ portalName }: PortalLayoutProps) {
             </div>
           </div>
           <div className="portal-header__actions">
-            <span className="portal-header__status">
-              <i aria-hidden="true" /> All systems normal
-            </span>
             <Link className="portal-header__password" to="/auth/change-password">
               Security
             </Link>

@@ -97,6 +97,8 @@ export function AdminAssignmentsPage() {
           },
         ]}
         getRowKey={(row) => row.id}
+        error={query.isError}
+        onRetry={() => void query.refetch()}
         loading={query.isPending}
         rows={query.data ?? []}
       />
@@ -235,6 +237,8 @@ export function AdminAnnouncementsPage() {
           },
         ]}
         getRowKey={(row) => row.id}
+        error={query.isError}
+        onRetry={() => void query.refetch()}
         loading={query.isPending}
         rows={query.data ?? []}
       />

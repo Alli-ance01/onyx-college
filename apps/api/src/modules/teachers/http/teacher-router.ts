@@ -160,6 +160,7 @@ export function createTeacherRouter(dependencies: {
     const roster = new Map<string, Awaited<ReturnType<EnrollmentService['list']>>[number]>();
     for (const assignment of assignments) {
       const entries = await enrollments.list({
+        teacherUserId: requireAuthenticatedPrincipal(request).userId,
         academicSessionId: assignment.academicSession.id,
         classLevelId: assignment.classLevel.id,
         ...(assignment.track === undefined ? {} : { trackId: assignment.track.id }),

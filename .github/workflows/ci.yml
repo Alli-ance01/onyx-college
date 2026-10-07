@@ -55,5 +55,11 @@ jobs:
       - name: Run MongoDB replica-set integration tests
         run: pnpm test:integration
 
+      - name: Install browser for portal tests
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Verify admin and student browser journeys
+        run: pnpm test:e2e
+
       - name: Build production artifacts
         run: pnpm build

@@ -25,11 +25,11 @@ import {
   SubjectOfferingModel,
 } from '../../subjects/infrastructure/subject-models.js';
 import { OutboxEventModel } from '../../system/infrastructure/system-models.js';
-import { requireTeachingScope } from '../../teachers/application/teaching-scope-policy.js';
 import {
-  TeacherModel,
-  TeachingAssignmentModel,
-} from '../../teachers/infrastructure/teacher-models.js';
+  activeTeachingAssignmentFilter,
+  requireTeachingScope,
+} from '../../teachers/application/teaching-scope-policy.js';
+import { TeachingAssignmentModel } from '../../teachers/infrastructure/teacher-models.js';
 import {
   calculateOverallAverage,
   calculateResult,
@@ -229,12 +229,7 @@ export class ResultBatchService {
   ): Promise<ResultBatchDto[]> {
     const query: Record<string, unknown> = { ...filters };
     if (principal.accountType === 'TEACHER') {
-      const teacher = await TeacherModel.findOne({
-        userId: principal.userId,
-        status: 'ACTIVE',
-      }).lean();
-      if (teacher === null) throw new AuthorizationError();
-      query.teacherId = teacher._id;
+      Object.assign(query, await activeTeachingAssignmentFilter(principal.userId));
     } else {
       hasPermission(principal, 'results.read_all');
     }
@@ -243,7 +238,12 @@ export class ResultBatchService {
   }
 
   public async getBatch(principal: ResultPrincipal, batchId: string): Promise<ResultBatchDto> {
-    const batch = await ResultBatchModel.findById(batchId)
+    const scope =
+      principal.accountType === 'TEACHER'
+        ? await activeTeachingAssignmentFilter(principal.userId)
+        : {};
+    if (principal.accountType !== 'TEACHER') hasPermission(principal, 'results.read_all');
+    const batch = await ResultBatchModel.findOne({ _id: batchId, ...scope })
       .populate('academicSessionId', 'label')
       .populate('termId', 'name ordinal')
       .populate('classLevelId', 'code name')

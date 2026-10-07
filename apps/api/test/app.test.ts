@@ -27,6 +27,60 @@ function createReadiness(isReady: boolean): ReadinessProbe {
 }
 
 describe('API foundation', () => {
+  it.each(['/api/v1/health/live', '/api/v1/auth/me', '/api/v1/not-a-route'])(
+    'prevents caching API successes and failures at %s',
+    async (path) => {
+      const app = createApp({ environment, logger, readiness: createReadiness(true) });
+      const response = await request(app).get(path);
+      expect(response.headers['cache-control']).toContain('no-store');
+    },
+  );
+
+  it('returns a safe client error when the JSON body exceeds its limit', async () => {
+    const app = createApp({
+      environment: { ...environment, JSON_BODY_LIMIT: '1kb' },
+      logger,
+      readiness: createReadiness(true),
+    });
+    const response = await request(app)
+      .post('/api/v1/auth/login')
+      .send({ password: 'x'.repeat(2048) })
+      .expect(413);
+    expect(response.body).toMatchObject({ error: { code: 'VALIDATION_FAILED' } });
+  });
+
+  it('omits sensitive request and error content from HTTP logs', async () => {
+    const lines: string[] = [];
+    const app = createApp({
+      environment,
+      logger: pino(
+        { level: 'info' },
+        {
+          write: (line) => {
+            lines.push(line);
+          },
+        },
+      ),
+      readiness: createReadiness(true),
+      registerFoundationRoutes: (expressApp) => {
+        expressApp.get('/api/v1/logging-check', (_request, response) => {
+          response.cookie('private_session', 'private-cookie-value');
+          throw new Error('database-secret-and-private-medical-data');
+        });
+      },
+    });
+    await request(app)
+      .get('/api/v1/logging-check?token=private-query-token')
+      .set('Authorization', 'Bearer private-bearer-token')
+      .set('Cookie', 'session=private-request-cookie')
+      .set('X-CSRF-Token', 'private-csrf-token')
+      .expect(500);
+    const output = lines.join('');
+    for (const secret of ['private-', 'database-secret']) expect(output).not.toContain(secret);
+    expect(output).toContain('Unhandled request error');
+    expect(output).toContain('requestId');
+  });
+
   it('reports liveness without requiring dependency readiness', async () => {
     const app = createApp({ environment, logger, readiness: createReadiness(false) });
 

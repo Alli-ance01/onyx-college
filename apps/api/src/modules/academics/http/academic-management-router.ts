@@ -75,8 +75,9 @@ async function requireCurriculumAccess(
   enrollmentId: string,
 ): Promise<void> {
   if (
-    principal.permissions.includes('enrollments.read') ||
-    principal.permissions.includes('enrollments.manage')
+    principal.accountType !== 'TEACHER' &&
+    (principal.permissions.includes('enrollments.read') ||
+      principal.permissions.includes('enrollments.manage'))
   ) {
     return;
   }
@@ -252,6 +253,7 @@ export function createAcademicManagementRouter(dependencies: {
     '/enrollments',
     requireAnyPermission('enrollments.read', 'enrollments.manage'),
     async (request, response) => {
+      const principal = requireAuthenticatedPrincipal(request);
       const academicSessionId = optionalObjectId(
         request.query.academicSessionId,
         'Academic session',
@@ -262,6 +264,7 @@ export function createAcademicManagementRouter(dependencies: {
       sendData(
         response,
         await enrollments.list({
+          ...(principal.accountType === 'TEACHER' ? { teacherUserId: principal.userId } : {}),
           ...(academicSessionId === undefined ? {} : { academicSessionId }),
           ...(classLevelId === undefined ? {} : { classLevelId }),
           ...(studentId === undefined ? {} : { studentId }),

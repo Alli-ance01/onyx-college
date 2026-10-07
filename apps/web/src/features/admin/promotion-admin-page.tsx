@@ -234,6 +234,8 @@ export function AdminPromotionsPage() {
           },
         ]}
         getRowKey={(row) => row.id}
+        error={enrollments.isError}
+        onRetry={() => void enrollments.refetch()}
         loading={enrollments.isPending}
         rows={enrollments.data ?? []}
       />

@@ -86,6 +86,19 @@ pnpm test:integration
 
 Docker is a development/test dependency only; it is not required to deploy the application to Vercel, Render, Atlas, and Cloudinary. GitHub Actions runs the replica-set integration gate on its hosted runner.
 
+Browser tests exercise the built web application against the real API and a disposable MongoDB replica set. Install Chromium once, then run them with Docker available:
+
+```sh
+pnpm exec playwright install --with-deps chromium
+pnpm test:e2e
+```
+
+The test runner owns ports 4001 and 4173, seeds synthetic accounts through the application services and API, and stops its servers and database afterward. It does not use your development database or deployment credentials. Failure screenshots and traces are written to ignored `test-results/`. To use an existing compatible Chromium installation, set `PLAYWRIGHT_CHROMIUM_EXECUTABLE` to its absolute executable path. Browser fixtures use local document storage; they do not validate Cloudinary.
+
+The browser gate covers admin and student login, responsive navigation from 320px to 1440px, student sections, lifecycle directory filters, request failure/retry, and registration approval through first student access. CI runs it before rebuilding the production artifacts; `test:e2e` temporarily builds the web app with its local test API URL.
+
+See the [readiness review](docs/architecture/readiness-review.md) for the verified scope and remaining release checks. Passing local tests alone is not a production launch sign-off.
+
 The API exposes `GET /api/v1/health/live` for process liveness and `GET /api/v1/health/ready` for dependency readiness. The web application defaults to the relative `/api/v1` base path and the development server proxies `/api` to the local API. Deployed API origins are supplied through `VITE_API_BASE_URL`.
 
 ## V1 boundary

@@ -16,6 +16,21 @@ function normalizeError(error: unknown): AppError {
     return new ValidationError('The request body contains invalid JSON.');
   }
 
+  if (typeof error === 'object' && error !== null && 'type' in error) {
+    if (error.type === 'entity.too.large') {
+      return new AppError('The request body exceeds the allowed size.', {
+        code: 'VALIDATION_FAILED',
+        statusCode: 413,
+      });
+    }
+    if (error.type === 'encoding.unsupported' || error.type === 'charset.unsupported') {
+      return new AppError('The request body encoding is not supported.', {
+        code: 'VALIDATION_FAILED',
+        statusCode: 415,
+      });
+    }
+  }
+
   return new AppError('An unexpected error occurred.', {
     cause: error,
     code: 'INTERNAL_SERVER_ERROR',
@@ -30,7 +45,6 @@ export const errorHandler: ErrorRequestHandler = (error, request, response, _nex
   if (normalized.statusCode >= 500) {
     request.log.error(
       {
-        err: error,
         errorType: error instanceof Error ? error.name : 'UnknownError',
         requestId: request.requestId,
       },

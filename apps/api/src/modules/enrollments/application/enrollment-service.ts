@@ -9,6 +9,7 @@ import {
 } from '../../academics/infrastructure/academic-models.js';
 import { AuditWriter } from '../../audit/application/audit-writer.js';
 import { StudentModel } from '../../students/infrastructure/student-models.js';
+import { teacherEnrollmentFilter } from '../../teachers/application/teaching-scope-policy.js';
 import { OutboxEventModel } from '../../system/infrastructure/system-models.js';
 import { EnrollmentModel } from '../infrastructure/enrollment-model.js';
 
@@ -20,8 +21,12 @@ export class EnrollmentService {
     classLevelId?: string;
     studentId?: string;
     trackId?: string;
+    teacherUserId?: string;
   }): Promise<EnrollmentDto[]> {
-    const query: Record<string, unknown> = {};
+    const query: Record<string, unknown> =
+      filters.teacherUserId === undefined
+        ? {}
+        : await teacherEnrollmentFilter(filters.teacherUserId);
     if (filters.academicSessionId !== undefined)
       query.academicSessionId = filters.academicSessionId;
     if (filters.classLevelId !== undefined) query.classLevelId = filters.classLevelId;

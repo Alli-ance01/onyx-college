@@ -134,6 +134,8 @@ export function AdminTeachersPage() {
           },
         ]}
         getRowKey={(row) => row.id}
+        error={query.isError}
+        onRetry={() => void query.refetch()}
         loading={query.isPending}
         rows={query.data ?? []}
       />
@@ -239,6 +241,8 @@ export function AdminTeacherInvitationsPage() {
           },
         ]}
         getRowKey={(row) => row.id}
+        error={invitations.isError}
+        onRetry={() => void invitations.refetch()}
         loading={invitations.isPending}
         rows={invitations.data ?? []}
       />
@@ -382,6 +386,8 @@ export function AdminTeacherApprovalsPage() {
           },
         ]}
         getRowKey={(row) => row.id}
+        error={registrations.isError}
+        onRetry={() => void registrations.refetch()}
         loading={registrations.isPending}
         rows={registrations.data ?? []}
       />
@@ -566,6 +572,8 @@ export function AdminTeachingAssignmentsPage() {
           },
         ]}
         getRowKey={(row) => row.id}
+        error={assignments.isError}
+        onRetry={() => void assignments.refetch()}
         loading={assignments.isPending}
         rows={assignments.data ?? []}
       />

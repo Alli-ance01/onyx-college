@@ -92,6 +92,32 @@ describe('authentication and access integration', () => {
     ).rejects.toMatchObject({ code: 'BOOTSTRAP_ALREADY_COMPLETED', statusCode: 409 });
   });
 
+  it('blocks every protected portal until the temporary password is changed', async () => {
+    const login = await request(app)
+      .post('/api/v1/auth/login')
+      .set('Origin', origin)
+      .send({ identifier: 'root.admin', password: temporaryPassword })
+      .expect(200);
+    const { accessToken } = authenticationEnvelopeSchema.parse(login.body as unknown).data;
+    await request(app).get('/api/v1/auth/me').auth(accessToken, { type: 'bearer' }).expect(200);
+    for (const path of [
+      '/academic-setup',
+      '/academic-sessions',
+      '/teachers/me',
+      '/assignments',
+      '/announcements',
+      '/notifications',
+      '/results/batches',
+      '/students/me/profile',
+    ]) {
+      const response = await request(app)
+        .get(`/api/v1${path}`)
+        .auth(accessToken, { type: 'bearer' });
+      expect(response.status, path).toBe(403);
+      expect(response.body, path).toMatchObject({ error: { code: 'PASSWORD_CHANGE_REQUIRED' } });
+    }
+  });
+
   it('enforces forced password replacement and revokes other sessions on change', async () => {
     const browser = request.agent(app);
     const login = await browser

@@ -1,4 +1,5 @@
 import type { AuthTokensResponse, SuccessEnvelope } from '@onyx/contracts';
+import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import { publicEnvironment } from '../../config/public-environment.js';
@@ -17,6 +18,15 @@ const refreshLockName = 'onyx-auth-refresh';
 class CredentialMemory {
   #accessToken: string | null = null;
   #csrfToken: string | null = null;
+  #principalKey: string | null = null;
+
+  public principalChanged(authentication: AuthTokensResponse): boolean {
+    const { userId, portal, permissions, roles } = authentication.principal;
+    const key = JSON.stringify([userId, portal, [...permissions].sort(), [...roles].sort()]);
+    const changed = key !== this.#principalKey;
+    this.#principalKey = key;
+    return changed;
+  }
 
   public accept(authentication: AuthTokensResponse): void {
     this.#accessToken = authentication.accessToken;
@@ -26,6 +36,7 @@ class CredentialMemory {
   public clear(): void {
     this.#accessToken = null;
     this.#csrfToken = null;
+    this.#principalKey = null;
   }
 
   public getAccessToken(): string | null {
@@ -59,6 +70,7 @@ function wait(milliseconds: number): Promise<void> {
 }
 
 export function AuthSessionProvider({ children, fetchImplementation }: AuthSessionProviderProps) {
+  const queryClient = useQueryClient();
   const fetcher = fetchImplementation ?? fetch;
   const [session, setSession] = useState<AuthSessionSnapshot>(initialSession);
   const [credentials] = useState(() => new CredentialMemory());
@@ -86,18 +98,20 @@ export function AuthSessionProvider({ children, fetchImplementation }: AuthSessi
 
   const acceptAuthentication = useCallback(
     (authentication: AuthTokensResponse) => {
+      if (credentials.principalChanged(authentication)) queryClient.clear();
       credentials.accept(authentication);
       setSession({ principal: authentication.principal, status: 'authenticated' });
     },
-    [credentials],
+    [credentials, queryClient],
   );
 
   const clearAuthentication = useCallback(
     (status: 'anonymous' | 'expired') => {
       credentials.clear();
+      queryClient.clear();
       setSession({ principal: null, status });
     },
-    [credentials],
+    [credentials, queryClient],
   );
 
   const fetchCsrf = useCallback(async (): Promise<string> => {

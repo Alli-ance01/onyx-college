@@ -37,9 +37,81 @@ function renderApp(initialEntry: string, fetchImplementation: typeof fetch) {
       </AuthSessionProvider>
     </QueryClientProvider>,
   );
+  return router;
 }
 
 describe('browser authentication lifecycle', () => {
+  it('returns a student to the protected page they originally opened', async () => {
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(
+        jsonResponse(
+          { error: { code: 'AUTHENTICATION_REQUIRED', message: 'Sign in', requestId: 'test' } },
+          401,
+        ),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          data: {
+            accessToken: 'memory-token',
+            csrfToken: 'csrf',
+            expiresInSeconds: 600,
+            principal: {
+              ...principal,
+              accountType: 'STUDENT',
+              portal: 'STUDENT',
+              permissions: [],
+              roles: ['STUDENT'],
+            },
+          },
+        }),
+      )
+      .mockImplementation(() => Promise.resolve(jsonResponse({ data: [] })));
+    const router = renderApp('/student/notifications', fetchMock);
+    fireEvent.change(await screen.findByLabelText('Username, email, or phone'), {
+      target: { value: 'student.one' },
+    });
+    fireEvent.change(screen.getByLabelText(/^Password/u), {
+      target: { value: 'a-secure-password' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Continue to workspace' }));
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/student/notifications');
+    });
+    expect(await screen.findByRole('heading', { name: 'Notifications' })).toBeVisible();
+  });
+  it('takes a successful direct login to the account portal', async () => {
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(
+        jsonResponse(
+          { error: { code: 'AUTHENTICATION_REQUIRED', message: 'Sign in', requestId: 'test' } },
+          401,
+        ),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          data: {
+            accessToken: 'memory-token',
+            csrfToken: 'csrf',
+            expiresInSeconds: 600,
+            principal,
+          },
+        }),
+      );
+    renderApp('/auth/login', fetchMock);
+    fireEvent.change(await screen.findByLabelText('Username, email, or phone'), {
+      target: { value: 'super.admin' },
+    });
+    fireEvent.change(screen.getByLabelText(/^Password/u), {
+      target: { value: 'a-secure-password' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Continue to workspace' }));
+    expect(
+      await screen.findByRole('heading', { name: 'Good day, System Administrator' }),
+    ).toBeVisible();
+  });
+
   it('restores a refresh-cookie session and enters its role-aware shell', async () => {
     const fetchMock = vi
       .fn<typeof fetch>()

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-import { EmptyState, LoadingState } from './async-state.js';
+import { EmptyState, ErrorState, LoadingState } from './async-state.js';
 
 export interface DataTableColumn<Row> {
   align?: 'center' | 'end' | 'start';
@@ -17,6 +17,8 @@ interface DataTableProps<Row> {
   emptyTitle?: string;
   getRowKey: (row: Row) => string;
   loading?: boolean;
+  error?: boolean;
+  onRetry?: () => void;
   rows: readonly Row[];
 }
 
@@ -27,8 +29,18 @@ export function DataTable<Row>({
   emptyTitle = 'No records found',
   getRowKey,
   loading = false,
+  error = false,
+  onRetry,
   rows,
 }: DataTableProps<Row>) {
+  if (error) {
+    return (
+      <ErrorState
+        title={`${caption} unavailable`}
+        {...(onRetry === undefined ? {} : { onRetry })}
+      />
+    );
+  }
   if (loading) {
     return <LoadingState label={`Loading ${caption}`} rows={5} variant="table" />;
   }
