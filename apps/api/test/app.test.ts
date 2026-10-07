@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
 import { createApp } from '../src/app.js';
+import { DocumentStorageUnavailableError } from '../src/app/errors/app-error.js';
 import { loadEnvironment } from '../src/config/environment.js';
 import type { ReadinessProbe } from '../src/platform/health/service-readiness.js';
 
@@ -27,6 +28,36 @@ function createReadiness(isReady: boolean): ReadinessProbe {
 }
 
 describe('API foundation', () => {
+  it('logs safe storage diagnostics without exposing provider messages or credentials', async () => {
+    const lines: string[] = [];
+    const app = createApp({
+      environment,
+      readiness: createReadiness(true),
+      logger: pino(
+        { level: 'info' },
+        {
+          write: (line) => {
+            lines.push(line);
+          },
+        },
+      ),
+      registerFoundationRoutes: (expressApp) => {
+        expressApp.get('/api/v1/storage-error', () => {
+          throw new DocumentStorageUnavailableError('provider_error', {
+            http_code: 401,
+            message: 'private-provider-credential',
+          });
+        });
+      },
+    });
+    const result = await request(app).get('/api/v1/storage-error').expect(503);
+    expect(result.body).toMatchObject({ error: { code: 'DOCUMENT_STORAGE_UNAVAILABLE' } });
+    expect(JSON.stringify(result.body)).not.toContain('providerStatus');
+    const output = lines.join('');
+    expect(output).toContain('"providerStatus":401');
+    expect(output).toContain('"storageReason":"provider_error"');
+    expect(output).not.toContain('private-provider-credential');
+  });
   it.each(['/api/v1/health/live', '/api/v1/auth/me', '/api/v1/not-a-route'])(
     'prevents caching API successes and failures at %s',
     async (path) => {

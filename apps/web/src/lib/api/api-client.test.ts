@@ -1,6 +1,10 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { ApiClient, ApiClientError } from './api-client.js';
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 function response(body: unknown, status: number): Response {
   return new Response(JSON.stringify(body), {
@@ -10,6 +14,30 @@ function response(body: unknown, status: number): Response {
 }
 
 describe('ApiClient authentication recovery', () => {
+  it.each(['error', 'timeout', 'abort'])(
+    'settles an upload after %s instead of leaving it pending',
+    async (event) => {
+      vi.spyOn(XMLHttpRequest.prototype, 'send').mockImplementation(function (
+        this: XMLHttpRequest,
+      ) {
+        expect(this.timeout).toBe(120_000);
+        this.dispatchEvent(new Event(event));
+      });
+      const client = new ApiClient({ baseUrl: '/api/v1' });
+      await expect(
+        client.upload(
+          '/student-documents/passport/content',
+          new File(['test'], 'test.png', { type: 'image/png' }),
+        ),
+      ).rejects.toMatchObject({
+        status: 0,
+        message:
+          event === 'timeout'
+            ? 'The upload timed out. Please try again.'
+            : 'The connection was interrupted. Check your connection and try again.',
+      });
+    },
+  );
   it('invokes fetch with the global receiver', async () => {
     const fetchMock = vi.fn<typeof fetch>(function (this: unknown) {
       expect(this).toBe(globalThis);

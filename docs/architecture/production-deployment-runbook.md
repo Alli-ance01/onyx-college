@@ -189,3 +189,15 @@ Before real intake:
 - keep Render automatic deploys behind the successful GitHub CI check and protect the production branch from unchecked direct pushes.
 
 Rollback the web and API only to versions compatible with the current database shape. Never roll back by deleting academic, registration, audit, or document history.
+
+## Diagnosing passport upload failures
+
+A `DOCUMENT_STORAGE_UNAVAILABLE` response is a 503 from the storage adapter. It does not, by itself, identify invalid credentials versus an upstream outage or unexpected provider response. Use the response `requestId` (also shown beside an upload error in the registration form) to find the corresponding Render log entry. The API logs only these allowlisted diagnostics, never the provider's raw message, credential, signature, file contents, or URL:
+
+- `storageReason: provider_error` with `providerStatus: 401` or `403`: check the selected Cloudinary product environment and its cloud name/API key/API secret pair in Render. Verify the account's upload restrictions. Keep values in provider settings; do not paste them into issues or chat.
+- `providerCode: ECONNRESET`, `ETIMEDOUT`, `ENOTFOUND`, or `ECONNREFUSED`: investigate API-to-storage connectivity and provider availability.
+- `storageReason: invalid_response` or `metadata_mismatch`: inspect the provider account configuration and response contract in a controlled staging test. Do not bypass authenticated delivery or integrity checks to force an upload through.
+
+A browser `ERR_CONNECTION_RESET` means the connection failed; it does not prove a Cloudinary failure. Correlate it with Render restart/deployment events and API readiness. A 401 on a protected read may trigger one session refresh and retry. Repeated 401s require checking the refresh request, browser cookie acceptance, exact `WEB_ORIGIN`, and the production `Secure`/`SameSite=None` cookie configuration. Do not make private files public or disable authentication/CORS as a workaround.
+
+Uploads refresh expired authentication but are not automatically replayed. The form tells the user to select the file again after a successful refresh. Network failures, timeouts, and 503s settle the upload state and permit retry; unsaved form fields are retained when document metadata reloads. These recovery paths are covered by the browser suite against local storage. Provider credentials and a real hosted upload still need staging verification.

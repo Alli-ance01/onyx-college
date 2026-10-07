@@ -1,7 +1,7 @@
 import { v2 as cloudinary } from 'cloudinary';
 import { z } from 'zod';
 
-import { AppError } from '../../../app/errors/app-error.js';
+import { AppError, DocumentStorageUnavailableError } from '../../../app/errors/app-error.js';
 import type {
   DocumentStorage,
   DocumentStorageObject,
@@ -61,13 +61,11 @@ const destroyResponseSchema = z.object({
   result: z.enum(['not found', 'ok']),
 });
 
-function unavailable(cause?: unknown): AppError {
-  return new AppError('Document storage is temporarily unavailable.', {
-    code: 'DOCUMENT_STORAGE_UNAVAILABLE',
-    expose: true,
-    statusCode: 503,
-    ...(cause === undefined ? {} : { cause }),
-  });
+function unavailable(
+  cause?: unknown,
+  reason: ConstructorParameters<typeof DocumentStorageUnavailableError>[0] = 'provider_error',
+): AppError {
+  return new DocumentStorageUnavailableError(reason, cause);
 }
 
 class CloudinarySdkGateway implements CloudinaryGateway {
@@ -119,13 +117,13 @@ class CloudinarySdkGateway implements CloudinaryGateway {
           use_filename: false,
         },
         (error, result) => {
-          if (error !== undefined || result === undefined) {
+          if (error != null || result === undefined) {
             reject(unavailable(error));
             return;
           }
           const parsed = uploadResponseSchema.safeParse(result);
           if (!parsed.success) {
-            reject(unavailable(parsed.error));
+            reject(unavailable(parsed.error, 'invalid_response'));
             return;
           }
           resolve({
@@ -148,7 +146,7 @@ class CloudinarySdkGateway implements CloudinaryGateway {
 }
 
 function cloudinaryPublicId(key: string, resourceType: 'image' | 'raw'): string {
-  if (!/^[a-zA-Z0-9/_-]+\.[a-z0-9]+$/u.test(key)) throw unavailable();
+  if (!/^[a-zA-Z0-9/_-]+\.[a-z0-9]+$/u.test(key)) throw unavailable(undefined, 'invalid_locator');
   return resourceType === 'raw' ? key : key.replace(/\.[a-z0-9]+$/u, '');
 }
 
@@ -216,7 +214,7 @@ export class CloudinaryDocumentStorage implements DocumentStorage {
         result.resourceType !== resourceType ||
         (result.format !== undefined && result.format !== format)
       )
-        throw unavailable();
+        throw unavailable(undefined, 'metadata_mismatch');
       return {
         bytes: result.bytes,
         deliveryType: 'authenticated',
