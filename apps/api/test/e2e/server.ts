@@ -79,6 +79,7 @@ if (classLevel === undefined) throw new Error('Missing class fixture');
 for (const [username, firstName, surname, phone, approve] of [
   [accounts.student, 'Amara', 'Okafor', '08012345678', true],
   [accounts.applicant, 'David', 'Adeyemi', '08012345679', false],
+  [accounts.uploader, 'Fola', 'Adams', '08012345680', false],
 ] as const) {
   await request(app)
     .post('/api/v1/student-signups')
@@ -116,6 +117,7 @@ for (const [username, firstName, surname, phone, approve] of [
       customResponses: {},
     })
     .expect(200);
+  if (username === accounts.uploader) continue;
   const requirements = await request(app)
     .get('/api/v1/document-requirements')
     .auth(token, { type: 'bearer' })

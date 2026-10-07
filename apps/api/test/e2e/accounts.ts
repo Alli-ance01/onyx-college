@@ -4,4 +4,5 @@ export const accounts = {
   admin: 'browser.admin',
   student: 'browser.student',
   applicant: 'browser.applicant',
+  uploader: 'browser.uploader',
 } as const;

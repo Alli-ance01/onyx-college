@@ -20,7 +20,12 @@ export class ApiClientError extends Error {
   public readonly status: number;
 
   public constructor(status: number, envelope?: ClientErrorEnvelope) {
-    super(envelope?.error.message ?? 'The request could not be completed.');
+    super(
+      envelope?.error.message ??
+        (status === 0
+          ? 'The connection was interrupted. Check your connection and try again.'
+          : 'The request could not be completed.'),
+    );
     this.name = 'ApiClientError';
     this.status = status;
     this.code = envelope?.error.code ?? 'UNEXPECTED_RESPONSE';
@@ -79,7 +84,29 @@ export class ApiClient {
     return this.uploadWithMethod(path, file, 'PUT', onProgress);
   }
 
-  public uploadWithMethod<TResponse>(
+  public async uploadWithMethod<TResponse>(
+    path: string,
+    file: File,
+    method: 'POST' | 'PUT',
+    onProgress?: (percent: number) => void,
+  ): Promise<TResponse> {
+    try {
+      return await this.#upload<TResponse>(path, file, method, onProgress);
+    } catch (error) {
+      if (
+        error instanceof ApiClientError &&
+        error.status === 401 &&
+        this.#sessionRefresher !== undefined
+      ) {
+        if (await this.#sessionRefresher.refreshSession()) {
+          error.message = 'Your session was refreshed. Please try the upload again.';
+        }
+      }
+      throw error;
+    }
+  }
+
+  #upload<TResponse>(
     path: string,
     file: File,
     method: 'POST' | 'PUT',
@@ -90,6 +117,7 @@ export class ApiClient {
       request.open(method, `${this.#baseUrl}${path}`);
       request.responseType = 'json';
       request.withCredentials = true;
+      request.timeout = 120_000;
       request.setRequestHeader('Accept', 'application/json');
       request.setRequestHeader('Content-Type', file.type);
       request.setRequestHeader('X-File-Name', file.name);
@@ -106,6 +134,14 @@ export class ApiClient {
         else reject(new ApiClientError(request.status, parsed.success ? parsed.data : undefined));
       });
       request.addEventListener('error', () => {
+        reject(new ApiClientError(0));
+      });
+      request.addEventListener('timeout', () => {
+        const error = new ApiClientError(0);
+        error.message = 'The upload timed out. Please try again.';
+        reject(error);
+      });
+      request.addEventListener('abort', () => {
         reject(new ApiClientError(0));
       });
       request.send(file);

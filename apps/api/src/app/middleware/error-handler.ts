@@ -1,7 +1,7 @@
 import type { ErrorEnvelope, PublicErrorCode } from '@onyx/contracts';
 import type { ErrorRequestHandler } from 'express';
 
-import { AppError, ValidationError } from '../errors/app-error.js';
+import { AppError, DocumentStorageUnavailableError, ValidationError } from '../errors/app-error.js';
 
 interface HttpSyntaxError extends SyntaxError {
   status?: number;
@@ -47,6 +47,13 @@ export const errorHandler: ErrorRequestHandler = (error, request, response, _nex
       {
         errorType: error instanceof Error ? error.name : 'UnknownError',
         requestId: request.requestId,
+        ...(normalized instanceof DocumentStorageUnavailableError
+          ? {
+              storageReason: normalized.storageReason,
+              providerStatus: normalized.providerStatus,
+              providerCode: normalized.providerCode,
+            }
+          : {}),
       },
       'Unhandled request error',
     );

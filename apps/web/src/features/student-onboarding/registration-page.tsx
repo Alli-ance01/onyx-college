@@ -7,11 +7,12 @@ import type {
 } from '@onyx/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
-import { useForm, useWatch } from 'react-hook-form';
+import { useForm, useFormState, useWatch } from 'react-hook-form';
 import { useNavigate } from 'react-router';
 
 import { ApiClientError } from '../../lib/api/api-client.js';
 import { useAuthSession } from '../../lib/auth/use-auth-session.js';
+import { ErrorState } from '../../shared/ui/async-state.js';
 import { DocumentViewButton } from './document-view-button.js';
 
 const steps = [
@@ -36,7 +37,14 @@ const emptyDraft: RegistrationDraftInput = {
 function ErrorMessage({ error }: { error: unknown }) {
   return (
     <div className="form-alert form-alert--error" role="alert">
-      {error instanceof ApiClientError ? error.message : 'The request could not be completed.'}
+      {typeof error === 'string'
+        ? error
+        : error instanceof ApiClientError
+          ? error.message
+          : 'The request could not be completed. Check your connection and try again.'}
+      {error instanceof ApiClientError && error.requestId !== undefined ? (
+        <small>Reference: {error.requestId}</small>
+      ) : null}
     </div>
   );
 }
@@ -183,6 +191,7 @@ export function RegistrationPage() {
   const [step, setStep] = useState(0);
   const [savedAt, setSavedAt] = useState<Date>();
   const [uploadProgress, setUploadProgress] = useState<number>();
+  const [uploadError, setUploadError] = useState<unknown>();
   const registrationQuery = useQuery({
     queryKey: ['student-registration', 'mine'],
     queryFn: async () =>
@@ -213,10 +222,15 @@ export function RegistrationPage() {
       ).data,
   });
   const form = useForm<RegistrationDraftInput>({ defaultValues: emptyDraft, mode: 'onBlur' });
+  const { dirtyFields } = useFormState({ control: form.control });
+  const hasUnsavedChanges = Object.keys(dirtyFields).length > 0;
   const registration = registrationQuery.data;
   useEffect(() => {
     if (registration !== undefined)
-      form.reset({ ...registration.data, version: registration.version });
+      form.reset(
+        { ...registration.data, version: registration.version },
+        { keepDirtyValues: true },
+      );
   }, [form, registration]);
 
   const saveMutation = useMutation({
@@ -250,10 +264,13 @@ export function RegistrationPage() {
       await queryClient.invalidateQueries({ queryKey: ['student-registration', 'mine'] });
     },
   });
-  const saveAndMove = form.handleSubmit(async (draft) => {
-    await saveMutation.mutateAsync(draft);
-    setStep((current) => Math.min(current + 1, steps.length - 1));
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  const saveAndMove = form.handleSubmit((draft) => {
+    saveMutation.mutate(draft, {
+      onSuccess: () => {
+        setStep((current) => Math.min(current + 1, steps.length - 1));
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      },
+    });
   });
 
   const [requestedClass, nationality] = useWatch({
@@ -286,7 +303,10 @@ export function RegistrationPage() {
   if (registrationQuery.isError || registration === undefined)
     return (
       <main className="registration-shell">
-        <ErrorMessage error={registrationQuery.error} />
+        <ErrorState
+          title="Registration unavailable"
+          onRetry={() => void registrationQuery.refetch()}
+        />
       </main>
     );
   if (!['DRAFT', 'CHANGES_REQUESTED'].includes(registration.status))
@@ -299,6 +319,15 @@ export function RegistrationPage() {
   const uploadPassport = async (file: File) => {
     const requirement = requirementsQuery.data?.find(({ code }) => code === 'PASSPORT_PHOTOGRAPH');
     if (requirement === undefined) return;
+    setUploadError(undefined);
+    if (
+      !requirement.acceptedMimeTypes.includes(file.type) ||
+      file.size === 0 ||
+      file.size > requirement.maximumBytes
+    ) {
+      setUploadError('Choose a JPEG or PNG photograph within the allowed file size.');
+      return;
+    }
     setUploadProgress(0);
     try {
       await auth.apiClient.upload(
@@ -307,6 +336,8 @@ export function RegistrationPage() {
         setUploadProgress,
       );
       await queryClient.invalidateQueries({ queryKey: ['student-registration', 'mine'] });
+    } catch (error) {
+      setUploadError(error);
     } finally {
       setUploadProgress(undefined);
     }
@@ -333,11 +364,19 @@ export function RegistrationPage() {
         <div className="save-indicator" aria-live="polite">
           {saveMutation.isPending
             ? 'Saving…'
-            : savedAt === undefined
-              ? 'Progress saved when you continue'
-              : `Saved ${savedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+            : hasUnsavedChanges
+              ? 'Unsaved changes'
+              : savedAt === undefined
+                ? 'Progress saved when you continue'
+                : `Saved ${savedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
         </div>
       </header>
+      {academicQuery.isError ? (
+        <ErrorState
+          title="Academic options unavailable"
+          onRetry={() => void academicQuery.refetch()}
+        />
+      ) : null}
       {registration.status === 'CHANGES_REQUESTED' ? (
         <div className="form-alert">
           <strong>Changes requested:</strong> {registration.decisionReason}
@@ -683,6 +722,12 @@ export function RegistrationPage() {
           ) : null}
           {step === 5 ? (
             <div className="document-uploader">
+              {requirementsQuery.isError ? (
+                <ErrorState
+                  title="Document requirements unavailable"
+                  onRetry={() => void requirementsQuery.refetch()}
+                />
+              ) : null}
               <div>
                 <h3>
                   Passport photograph <span aria-label="required">*</span>
@@ -694,9 +739,14 @@ export function RegistrationPage() {
                   Choose photograph
                   <input
                     accept="image/jpeg,image/png"
-                    disabled={!isAllowed('documents.passportPhotograph')}
+                    disabled={
+                      !isAllowed('documents.passportPhotograph') ||
+                      uploadProgress !== undefined ||
+                      !requirementsQuery.isSuccess
+                    }
                     onChange={(event) => {
                       const file = event.target.files?.[0];
+                      event.target.value = '';
                       if (file !== undefined) void uploadPassport(file);
                     }}
                     type="file"
@@ -717,9 +767,14 @@ export function RegistrationPage() {
                     <input
                       className="visually-hidden"
                       accept="image/jpeg,image/png"
-                      disabled={!isAllowed('documents.passportPhotograph')}
+                      disabled={
+                        !isAllowed('documents.passportPhotograph') ||
+                        uploadProgress !== undefined ||
+                        !requirementsQuery.isSuccess
+                      }
                       onChange={(event) => {
                         const file = event.target.files?.[0];
+                        event.target.value = '';
                         if (file !== undefined) void uploadPassport(file);
                       }}
                       type="file"
@@ -728,7 +783,9 @@ export function RegistrationPage() {
                   <button
                     className="text-button text-button--danger"
                     disabled={
-                      !isAllowed('documents.passportPhotograph') || removeDocumentMutation.isPending
+                      !isAllowed('documents.passportPhotograph') ||
+                      removeDocumentMutation.isPending ||
+                      uploadProgress !== undefined
                     }
                     onClick={() => {
                       removeDocumentMutation.mutate(passport.id);
@@ -744,6 +801,10 @@ export function RegistrationPage() {
                   {uploadProgress}%
                 </progress>
               )}
+              {uploadError === undefined ? null : <ErrorMessage error={uploadError} />}
+              {removeDocumentMutation.isError ? (
+                <ErrorMessage error={removeDocumentMutation.error} />
+              ) : null}
             </div>
           ) : null}
           {step === 6 ? <Review registration={registration} values={form.getValues()} /> : null}
@@ -773,20 +834,26 @@ export function RegistrationPage() {
               <span />
             )}
             {step < steps.length - 1 ? (
-              <button className="primary-button" disabled={saveMutation.isPending} type="submit">
+              <button
+                className="primary-button"
+                disabled={saveMutation.isPending || uploadProgress !== undefined}
+                type="submit"
+              >
                 Save and continue
               </button>
             ) : (
               <button
                 className="primary-button"
-                disabled={submitMutation.isPending || passport === undefined}
+                disabled={
+                  submitMutation.isPending || passport === undefined || uploadProgress !== undefined
+                }
                 onClick={() => {
                   if (
                     window.confirm(
                       'Submit this registration for administrative review? You cannot freely edit it after submission.',
                     )
                   )
-                    void submitMutation.mutateAsync();
+                    submitMutation.mutate();
                 }}
                 type="button"
               >
