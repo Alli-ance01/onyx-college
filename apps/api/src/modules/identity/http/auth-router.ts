@@ -105,7 +105,10 @@ export function createAuthRouter(dependencies: {
   const router = Router();
   const { environment } = dependencies;
   const trustedOrigin = requireTrustedBrowserOrigin(environment.WEB_ORIGIN);
-  const authenticate = createAuthenticationMiddleware(dependencies);
+  // Session inspection and password replacement must remain available during setup.
+  const authenticate = createAuthenticationMiddleware(dependencies, {
+    allowPasswordChangeRequired: true,
+  });
   const loginLimiter = createRateLimiter(
     environment.AUTH_RATE_LIMIT_WINDOW_SECONDS,
     environment.AUTH_LOGIN_RATE_LIMIT_MAX,

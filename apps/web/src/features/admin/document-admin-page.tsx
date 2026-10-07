@@ -177,6 +177,8 @@ export function AdminDocumentsPage() {
           },
         ]}
         getRowKey={(row) => row.id}
+        error={requirements.isError}
+        onRetry={() => void requirements.refetch()}
         loading={requirements.isPending}
         rows={requirements.data ?? []}
       />
@@ -286,6 +288,8 @@ export function AdminDocumentsPage() {
           },
         ]}
         getRowKey={(row) => row.id}
+        error={documents.isError}
+        onRetry={() => void documents.refetch()}
         loading={documents.isPending}
         rows={documents.data ?? []}
       />

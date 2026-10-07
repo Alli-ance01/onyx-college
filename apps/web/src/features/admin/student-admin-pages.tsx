@@ -9,10 +9,11 @@ import type {
 } from '@onyx/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router';
+import { Link, useLocation, useParams, useSearchParams } from 'react-router';
 
 import { ApiClientError } from '../../lib/api/api-client.js';
 import { useAuthSession } from '../../lib/auth/use-auth-session.js';
+import { DataTable, ErrorState } from '../../shared/ui/index.js';
 import { DocumentViewButton } from '../student-onboarding/document-view-button.js';
 
 const registrationFilters = [
@@ -85,6 +86,9 @@ export function AdminRegistrationQueuePage() {
           </select>
         </label>
       </div>
+      {query.isError ? (
+        <ErrorState title="Registration queue unavailable" onRetry={() => void query.refetch()} />
+      ) : null}
       <div className="filter-tabs">
         {registrationFilters.map((item) => (
           <button
@@ -597,12 +601,19 @@ export function AdminAcademicSetupPage() {
 
 export function AdminStudentDirectoryPage() {
   const auth = useAuthSession();
+  const { pathname } = useLocation();
+  const fixedStatus = pathname.endsWith('/graduated')
+    ? 'GRADUATED'
+    : pathname.endsWith('/archived')
+      ? 'ARCHIVED'
+      : undefined;
   const [q, setQ] = useState('');
   const [sessionId, setSessionId] = useState('');
   const [classLevelId, setClassLevelId] = useState('');
   const [trackId, setTrackId] = useState('');
   const [gender, setGender] = useState('');
-  const [status, setStatus] = useState('');
+  const [selectedStatus, setStatus] = useState('');
+  const status = fixedStatus ?? selectedStatus;
   const [cursor, setCursor] = useState('');
   const academic = useQuery({
     queryKey: ['academic-setup'],
@@ -634,8 +645,14 @@ export function AdminStudentDirectoryPage() {
       <header className="page-heading">
         <div>
           <p className="eyebrow">Students</p>
-          <h1>Student directory</h1>
-          <p>Approved, database-backed student profiles and their current placements.</p>
+          <h1>
+            {fixedStatus === 'GRADUATED'
+              ? 'Graduated students'
+              : fixedStatus === 'ARCHIVED'
+                ? 'Archived students'
+                : 'Student directory'}
+          </h1>
+          <p>Find student records, view profiles, and review academic placements.</p>
         </div>
       </header>
       <div className="toolbar surface">
@@ -719,6 +736,7 @@ export function AdminStudentDirectoryPage() {
           Status
           <select
             value={status}
+            disabled={fixedStatus !== undefined}
             onChange={(event) => {
               setStatus(event.target.value);
               resetCursor();
@@ -731,43 +749,35 @@ export function AdminStudentDirectoryPage() {
           </select>
         </label>
       </div>
-      <div className="table-wrap surface">
-        <table>
-          <thead>
-            <tr>
-              <th>Student</th>
-              <th>Student ID</th>
-              <th>Gender</th>
-              <th>Class</th>
-              <th>Track</th>
-              <th>Status</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {students.map((student) => (
-              <tr key={student.id}>
-                <td>
-                  <strong>{student.name}</strong>
-                </td>
-                <td>{student.studentId}</td>
-                <td>{student.gender}</td>
-                <td>{student.classLevel ?? '—'}</td>
-                <td>{student.track ?? '—'}</td>
-                <td>{student.lifecycleStatus}</td>
-                <td>
-                  <Link to={`/admin/students/${student.id}`}>View</Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {query.isLoading ? (
-          <p className="table-state">Loading students…</p>
-        ) : students.length === 0 ? (
-          <p className="table-state">No students match this view.</p>
-        ) : null}
-      </div>
+      {query.isError ? (
+        <ErrorState title="Student directory unavailable" onRetry={() => void query.refetch()} />
+      ) : (
+        <DataTable
+          caption="Student directory"
+          loading={query.isPending}
+          rows={students}
+          getRowKey={(student) => student.id}
+          emptyTitle="No students match this view"
+          emptyDescription="Try another search or filter. Approved students appear here after registration review."
+          columns={[
+            {
+              id: 'student',
+              header: 'Student',
+              render: (student) => <strong>{student.name}</strong>,
+            },
+            { id: 'identifier', header: 'Student ID', render: (student) => student.studentId },
+            { id: 'gender', header: 'Gender', render: (student) => student.gender },
+            { id: 'class', header: 'Class', render: (student) => student.classLevel ?? '—' },
+            { id: 'track', header: 'Track', render: (student) => student.track ?? '—' },
+            { id: 'status', header: 'Status', render: (student) => student.lifecycleStatus },
+            {
+              id: 'action',
+              header: 'Profile',
+              render: (student) => <Link to={`/admin/students/${student.id}`}>View profile</Link>,
+            },
+          ]}
+        />
+      )}
       {cursor !== '' || query.data?.meta?.hasMore === true ? (
         <div className="pagination-actions">
           {cursor === '' ? null : (
@@ -805,6 +815,12 @@ export function AdminStudentProfilePage() {
       (await auth.apiClient.request<SuccessEnvelope<StudentProfileDto>>(`/students/${studentId}`))
         .data,
   });
+  if (query.isError)
+    return (
+      <main className="portal-content">
+        <ErrorState title="Student profile unavailable" onRetry={() => void query.refetch()} />
+      </main>
+    );
   if (query.data === undefined)
     return <main className="portal-content route-status">Loading student profile…</main>;
   const student = query.data;

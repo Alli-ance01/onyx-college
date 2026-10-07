@@ -5,6 +5,7 @@ import { Link } from 'react-router';
 
 import { ApiClientError } from '../../lib/api/api-client.js';
 import { useAuthSession } from '../../lib/auth/use-auth-session.js';
+import { ErrorState } from '../../shared/ui/async-state.js';
 import { DocumentViewButton } from '../student-onboarding/document-view-button.js';
 import { studentPortalApi, studentPortalQueryKeys } from '../student-portal/student-portal-api.js';
 
@@ -42,7 +43,7 @@ export function StudentDashboardPage() {
   if (query.isError || query.data === undefined)
     return (
       <main className="portal-content">
-        <div className="form-alert form-alert--error">Your dashboard could not be loaded.</div>
+        <ErrorState title="Dashboard unavailable" onRetry={() => void query.refetch()} />
       </main>
     );
   const student = query.data;
@@ -179,7 +180,7 @@ export function StudentProfilePage() {
   if (query.data === undefined)
     return (
       <main className="portal-content">
-        <div className="form-alert form-alert--error">Profile unavailable.</div>
+        <ErrorState title="Profile unavailable" onRetry={() => void query.refetch()} />
       </main>
     );
   const profile = query.data;

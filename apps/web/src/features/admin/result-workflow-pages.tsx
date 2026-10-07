@@ -53,9 +53,6 @@ export function AdminResultQueuePage({ mode }: { mode: ResultQueueMode }) {
         eyebrow="Sensitive academic records"
         title={titleFor(mode)}
       />
-      {query.isError ? (
-        <ErrorState onRetry={() => void query.refetch()} title="Result queue unavailable" />
-      ) : null}
       <DataTable<ResultBatchDto>
         caption={titleFor(mode)}
         columns={[
@@ -109,6 +106,8 @@ export function AdminResultQueuePage({ mode }: { mode: ResultQueueMode }) {
         ]}
         emptyDescription="No result batches currently need attention in this queue."
         getRowKey={(row) => row.id}
+        error={query.isError}
+        onRetry={() => void query.refetch()}
         loading={query.isPending}
         rows={rows}
       />
@@ -422,6 +421,8 @@ export function AdminResultCorrectionsPage() {
           },
         ]}
         getRowKey={(row) => row.id}
+        error={query.isError}
+        onRetry={() => void query.refetch()}
         loading={query.isPending}
         rows={query.data ?? []}
       />

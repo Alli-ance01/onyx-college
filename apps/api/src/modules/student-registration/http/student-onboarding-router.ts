@@ -492,6 +492,7 @@ export function createStudentOnboardingRouter(dependencies: {
     },
   );
   router.get('/students', requirePermission('students.read'), async (request, response) => {
+    const principal = requireAuthenticatedPrincipal(request);
     const status = studentLifecycleStatuses.find(
       (item) => item === request.query['filter[status]'],
     );
@@ -500,6 +501,7 @@ export function createStudentOnboardingRouter(dependencies: {
     const sessionId = optionalObjectId(request.query['filter[sessionId]'], 'Academic session');
     const trackId = optionalObjectId(request.query['filter[trackId]'], 'Track');
     const result = await students.directory({
+      ...(principal.accountType === 'TEACHER' ? { teacherUserId: principal.userId } : {}),
       ...(cursor === undefined ? {} : { cursor }),
       ...(typeof request.query.q === 'string' ? { q: request.query.q } : {}),
       ...(classLevelId === undefined ? {} : { classLevelId }),
@@ -528,6 +530,7 @@ export function createStudentOnboardingRouter(dependencies: {
         data: await students.profileForAdmin(
           validateObjectId(request.params.studentId, 'Student'),
           principal.permissions.includes('students.read_sensitive'),
+          principal.accountType === 'TEACHER' ? principal.userId : undefined,
         ),
       });
     },

@@ -97,6 +97,8 @@ export function AdminSubjectsPage() {
           },
         ]}
         getRowKey={(row) => row.id}
+        error={subjects.isError}
+        onRetry={() => void subjects.refetch()}
         loading={subjects.isPending}
         rows={subjects.data ?? []}
       />
@@ -261,6 +263,8 @@ export function AdminSubjectOfferingsPage() {
           },
         ]}
         getRowKey={(row) => row.id}
+        error={offerings.isError}
+        onRetry={() => void offerings.refetch()}
         loading={offerings.isPending}
         rows={offerings.data ?? []}
       />

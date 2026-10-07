@@ -126,7 +126,6 @@ function PasswordField({
 
 export function LoginPage() {
   const auth = useAuthSession();
-  const navigate = useNavigate();
   const location = useLocation();
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -140,14 +139,17 @@ export function LoginPage() {
     return <main className="route-status">Checking your secure session…</main>;
 
   if (auth.status === 'authenticated') {
+    const home = portalPath(auth.principal.portal);
+    const portalRoot = auth.principal.portal === 'STUDENT' ? '/student' : home;
+    const from: unknown = (location.state as { from?: unknown } | null)?.from;
+    const destination =
+      typeof from === 'string' && (from === portalRoot || from.startsWith(`${portalRoot}/`))
+        ? from
+        : home;
     return (
       <Navigate
         replace
-        to={
-          auth.principal.mustChangePassword
-            ? '/auth/change-password'
-            : portalPath(auth.principal.portal)
-        }
+        to={auth.principal.mustChangePassword ? '/auth/change-password' : destination}
       />
     );
   }
@@ -156,8 +158,6 @@ export function LoginPage() {
     setSubmissionError(null);
     try {
       await auth.login(fields);
-      const from = (location.state as { from?: string } | null)?.from;
-      await navigate(from ?? '/', { replace: true });
     } catch (error) {
       setSubmissionError(errorMessage(error));
     }

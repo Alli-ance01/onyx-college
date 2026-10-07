@@ -14,7 +14,10 @@ import { AuditWriter } from '../../audit/application/audit-writer.js';
 import { createNotifications } from '../../notifications/infrastructure/notification-model.js';
 import { StudentModel } from '../../students/infrastructure/student-models.js';
 import { OutboxEventModel } from '../../system/infrastructure/system-models.js';
-import { requireTeachingScope } from '../../teachers/application/teaching-scope-policy.js';
+import {
+  activeTeachingAssignmentFilter,
+  requireTeachingScope,
+} from '../../teachers/application/teaching-scope-policy.js';
 import {
   calculateOverallAverage,
   calculateResult,
@@ -115,6 +118,9 @@ export class ResultCorrectionService {
     if (principal.accountType === 'TEACHER') {
       requirePermission(principal, 'results.request_correction');
       query.requestedByUserId = principal.userId;
+      const scope = await activeTeachingAssignmentFilter(principal.userId);
+      const batches = await ResultBatchModel.find(scope).select('_id').lean();
+      query.resultBatchId = { $in: batches.map(({ _id }) => _id) };
     } else if (
       !principal.permissions.includes('results.approve_correction') &&
       !principal.permissions.includes('results.read_all')

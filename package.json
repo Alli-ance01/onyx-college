@@ -16,6 +16,7 @@
     "pretest": "pnpm --filter @onyx/contracts build",
     "test": "pnpm --recursive --workspace-concurrency=1 --if-present test",
     "test:integration": "pnpm --filter @onyx/api test:integration",
+    "test:e2e": "pnpm --filter @onyx/contracts build && playwright test --config apps/api/test/e2e/playwright.config.ts",
     "access:sync": "pnpm --filter @onyx/api access:sync",
     "bootstrap:super-admin": "pnpm --filter @onyx/api bootstrap:super-admin",
     "db:indexes": "pnpm --filter @onyx/api db:indexes",
@@ -24,6 +25,7 @@
   },
   "devDependencies": {
     "@eslint/js": "catalog:",
+    "@playwright/test": "1.63.0",
     "concurrently": "catalog:",
     "eslint": "catalog:",
     "eslint-config-prettier": "catalog:",

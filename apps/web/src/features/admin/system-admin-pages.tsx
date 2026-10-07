@@ -367,6 +367,8 @@ export function AdminAdministratorsPage() {
           },
         ]}
         getRowKey={(row) => row.id}
+        error={users.isError}
+        onRetry={() => void users.refetch()}
         loading={users.isPending}
         rows={users.data?.items ?? []}
       />
@@ -471,6 +473,8 @@ export function AdminRolesPage() {
           },
         ]}
         getRowKey={(row) => row.id}
+        error={roles.isError}
+        onRetry={() => void roles.refetch()}
         loading={roles.isPending}
         rows={roles.data ?? []}
       />
@@ -524,6 +528,8 @@ export function AdminPermissionsPage() {
           },
         ]}
         getRowKey={(row) => row.id}
+        error={query.isError}
+        onRetry={() => void query.refetch()}
         loading={query.isPending}
         rows={query.data ?? []}
       />
@@ -585,6 +591,8 @@ export function AdminAuditPage() {
           { header: 'Reason', id: 'reason', render: (row) => row.reason ?? '—' },
         ]}
         getRowKey={(row) => row.id}
+        error={query.isError}
+        onRetry={() => void query.refetch()}
         loading={query.isPending}
         rows={query.data?.items ?? []}
       />

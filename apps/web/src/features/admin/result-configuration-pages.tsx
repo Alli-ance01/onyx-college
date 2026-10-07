@@ -216,6 +216,8 @@ export function AdminAssessmentSchemesPage() {
           },
         ]}
         getRowKey={(row) => row.id}
+        error={schemes.isError}
+        onRetry={() => void schemes.refetch()}
         loading={schemes.isPending}
         rows={schemes.data ?? []}
       />
@@ -423,6 +425,8 @@ export function AdminGradingSchemesPage() {
           },
         ]}
         getRowKey={(row) => row.id}
+        error={schemes.isError}
+        onRetry={() => void schemes.refetch()}
         loading={schemes.isPending}
         rows={schemes.data ?? []}
       />

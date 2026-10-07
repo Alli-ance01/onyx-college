@@ -19,6 +19,7 @@ import {
 import { AuditWriter } from '../../audit/application/audit-writer.js';
 import { StudentDocumentModel } from '../../documents/infrastructure/document-models.js';
 import { EnrollmentModel } from '../../enrollments/infrastructure/enrollment-model.js';
+import { teacherEnrollmentFilter } from '../../teachers/application/teaching-scope-policy.js';
 import {
   GuardianModel,
   StudentGuardianModel,
@@ -127,7 +128,13 @@ export class StudentService {
   public async profileForAdmin(
     studentId: string,
     includeSensitive: boolean,
+    teacherUserId?: string,
   ): Promise<StudentProfileDto> {
+    if (teacherUserId !== undefined) {
+      const scope = await teacherEnrollmentFilter(teacherUserId);
+      if ((await EnrollmentModel.exists({ $and: [{ studentId }, scope] })) === null)
+        throw new NotFoundError();
+    }
     return this.#profile(studentId, includeSensitive);
   }
 
@@ -450,8 +457,12 @@ export class StudentService {
     sessionId?: string;
     status?: string;
     trackId?: string;
+    teacherUserId?: string;
   }): Promise<{ items: StudentDirectoryItemDto[]; nextCursor?: string }> {
-    const enrollmentFilter: Record<string, unknown> = {};
+    const enrollmentFilter: Record<string, unknown> =
+      filters.teacherUserId === undefined
+        ? {}
+        : await teacherEnrollmentFilter(filters.teacherUserId);
     if (filters.sessionId !== undefined) enrollmentFilter.academicSessionId = filters.sessionId;
     if (filters.classLevelId !== undefined) enrollmentFilter.classLevelId = filters.classLevelId;
     if (filters.trackId !== undefined) enrollmentFilter.trackId = filters.trackId;

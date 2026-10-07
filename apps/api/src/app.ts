@@ -37,6 +37,10 @@ export function createApp({
   app.use(requestId);
   app.use(httpLogging(logger));
   app.use(helmet());
+  app.use('/api', (_request, response, next) => {
+    response.setHeader('Cache-Control', 'private, no-store');
+    next();
+  });
   app.use(
     cors({
       credentials: true,

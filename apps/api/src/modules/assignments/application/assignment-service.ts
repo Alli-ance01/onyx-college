@@ -19,6 +19,7 @@ import { EnrollmentModel } from '../../enrollments/infrastructure/enrollment-mod
 import { StudentModel } from '../../students/infrastructure/student-models.js';
 import { SubjectService } from '../../subjects/application/subject-service.js';
 import { SubjectModel } from '../../subjects/infrastructure/subject-models.js';
+import { activeTeachingAssignmentFilter } from '../../teachers/application/teaching-scope-policy.js';
 import {
   TeacherModel,
   TeachingAssignmentModel,
@@ -95,12 +96,7 @@ export class AssignmentService {
       }
       query = { _id: { $in: allowed }, status: 'PUBLISHED' };
     } else if (!principal.permissions.includes('assignments.manage_all')) {
-      const teacher = await TeacherModel.findOne({
-        userId: principal.userId,
-        status: 'ACTIVE',
-      }).lean();
-      if (teacher === null) throw new AuthorizationError();
-      query = { teacherId: teacher._id };
+      query = await activeTeachingAssignmentFilter(principal.userId);
     }
     const records = await AssignmentModel.find(query)
       .populate('teacherId', 'firstName middleName lastName')
@@ -223,8 +219,10 @@ export class AssignmentService {
     title?: string;
   }): Promise<void> {
     const query: Record<string, unknown> = { _id: input.assignmentId, status: 'DRAFT' };
-    if (!input.actor.permissions.includes('assignments.manage_all'))
+    if (!input.actor.permissions.includes('assignments.manage_all')) {
       query.createdByUserId = input.actor.userId;
+      Object.assign(query, await activeTeachingAssignmentFilter(input.actor.userId));
+    }
     const changes: Record<string, unknown> = {};
     if (input.title !== undefined) changes.title = input.title;
     if (input.instructions !== undefined) changes.instructions = input.instructions;
@@ -239,8 +237,10 @@ export class AssignmentService {
     requestId: string;
   }): Promise<void> {
     const query: Record<string, unknown> = { _id: input.assignmentId, status: 'DRAFT' };
-    if (!input.actor.permissions.includes('assignments.manage_all'))
+    if (!input.actor.permissions.includes('assignments.manage_all')) {
       query.createdByUserId = input.actor.userId;
+      Object.assign(query, await activeTeachingAssignmentFilter(input.actor.userId));
+    }
     const publicationCandidate = await AssignmentModel.findOne(query).lean();
     if (publicationCandidate === null) throw new NotFoundError();
     const [recipientUserIds, subject] = await Promise.all([
@@ -317,8 +317,10 @@ export class AssignmentService {
     requestId: string;
   }): Promise<void> {
     const query: Record<string, unknown> = { _id: input.assignmentId, status: { $ne: 'ARCHIVED' } };
-    if (!input.actor.permissions.includes('assignments.manage_all'))
+    if (!input.actor.permissions.includes('assignments.manage_all')) {
       query.createdByUserId = input.actor.userId;
+      Object.assign(query, await activeTeachingAssignmentFilter(input.actor.userId));
+    }
     const result = await AssignmentModel.updateOne(query, { $set: { status: 'ARCHIVED' } });
     if (result.modifiedCount !== 1) throw new NotFoundError();
     await this.#audit.append({
@@ -340,7 +342,10 @@ export class AssignmentService {
     mimeType: string;
     requestId: string;
   }): Promise<string> {
-    const assignment = await AssignmentModel.findById(input.assignmentId).lean();
+    const scope = input.actor.permissions.includes('assignments.manage_all')
+      ? {}
+      : await activeTeachingAssignmentFilter(input.actor.userId);
+    const assignment = await AssignmentModel.findOne({ _id: input.assignmentId, ...scope }).lean();
     if (assignment?.status !== 'DRAFT')
       throw new ConflictError('Attachments can be changed only while the assignment is a draft.');
     const owns = assignment.createdByUserId.toString() === input.actor.userId;

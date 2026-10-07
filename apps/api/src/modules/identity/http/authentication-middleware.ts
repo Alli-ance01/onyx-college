@@ -9,11 +9,14 @@ import type { PrincipalResolver } from '../application/auth-records.js';
 import type { AccessTokenService } from '../infrastructure/access-token-service.js';
 import type { MongoSessionRepository } from '../infrastructure/mongo-session-repository.js';
 
-export function createAuthenticationMiddleware(dependencies: {
-  accessTokens: AccessTokenService;
-  principals: PrincipalResolver;
-  sessions: MongoSessionRepository;
-}): RequestHandler {
+export function createAuthenticationMiddleware(
+  dependencies: {
+    accessTokens: AccessTokenService;
+    principals: PrincipalResolver;
+    sessions: MongoSessionRepository;
+  },
+  options: { allowPasswordChangeRequired?: boolean } = {},
+): RequestHandler {
   return async (request, _response, next) => {
     try {
       const authorization = request.header('authorization');
@@ -30,6 +33,9 @@ export function createAuthenticationMiddleware(dependencies: {
         claims.userId,
         claims.sessionId,
       );
+      if (request.authPrincipal.mustChangePassword && !options.allowPasswordChangeRequired) {
+        throw new PasswordChangeRequiredError();
+      }
       next();
     } catch (error) {
       next(error);
