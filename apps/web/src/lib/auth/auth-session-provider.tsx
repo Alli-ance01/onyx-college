@@ -202,18 +202,13 @@ export function AuthSessionProvider({ children, fetchImplementation }: AuthSessi
   );
 
   const logout = useCallback(async () => {
-    try {
-      const csrfToken = credentials.getCsrfToken();
-      if (csrfToken !== null) {
-        await authRequest<undefined>('/auth/logout', {
-          headers: { 'X-CSRF-Token': csrfToken },
-          method: 'POST',
-        });
-      }
-    } finally {
-      clearAuthentication('anonymous');
-    }
-  }, [authRequest, clearAuthentication, credentials]);
+    const csrfToken = credentials.getCsrfToken() ?? (await fetchCsrf());
+    await authRequest<undefined>('/auth/logout', {
+      headers: { 'X-CSRF-Token': csrfToken },
+      method: 'POST',
+    });
+    clearAuthentication('anonymous');
+  }, [authRequest, clearAuthentication, credentials, fetchCsrf]);
 
   useEffect(() => {
     let active = true;

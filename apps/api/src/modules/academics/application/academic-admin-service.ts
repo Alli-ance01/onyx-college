@@ -68,7 +68,7 @@ export class AcademicAdminService {
             ordinal: index + 1,
             status: 'PLANNED',
           })),
-          { session: databaseSession },
+          { session: databaseSession, ordered: true },
         );
         await this.#audit.append(
           {
@@ -89,7 +89,7 @@ export class AcademicAdminService {
       if (created === undefined) throw new Error('Academic session could not be reloaded.');
       return created;
     } catch (error) {
-      if (error instanceof Error && error.name === 'MongoServerError')
+      if (error instanceof mongoose.mongo.MongoServerError && error.code === 11000)
         throw new ConflictError('This academic session already exists.');
       throw error;
     }

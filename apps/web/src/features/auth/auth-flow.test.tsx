@@ -74,7 +74,7 @@ describe('browser authentication lifecycle', () => {
     fireEvent.change(screen.getByLabelText(/^Password/u), {
       target: { value: 'a-secure-password' },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Continue to workspace' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
     await waitFor(() => {
       expect(router.state.location.pathname).toBe('/student/notifications');
     });
@@ -106,7 +106,7 @@ describe('browser authentication lifecycle', () => {
     fireEvent.change(screen.getByLabelText(/^Password/u), {
       target: { value: 'a-secure-password' },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Continue to workspace' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
     expect(
       await screen.findByRole('heading', { name: 'Good day, System Administrator' }),
     ).toBeVisible();
@@ -172,7 +172,7 @@ describe('browser authentication lifecycle', () => {
       target: { value: 'super.admin' },
     });
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'temporary-secret' } });
-    fireEvent.click(screen.getByRole('button', { name: /Continue to workspace/iu }));
+    fireEvent.click(screen.getByRole('button', { name: /Sign in/iu }));
 
     expect(await screen.findByRole('heading', { name: 'Set a new password.' })).toBeVisible();
     await waitFor(() => {
@@ -204,9 +204,7 @@ describe('browser authentication lifecycle', () => {
     renderApp('/auth/login', fetchMock);
 
     expect(await screen.findByText('Checking your secure session…')).toBeVisible();
-    expect(
-      screen.queryByRole('button', { name: /Continue to workspace/iu }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Sign in/iu })).not.toBeInTheDocument();
 
     finishSessionCheck(
       jsonResponse(
@@ -221,7 +219,7 @@ describe('browser authentication lifecycle', () => {
       ),
     );
 
-    expect(await screen.findByRole('button', { name: /Continue to workspace/iu })).toBeVisible();
+    expect(await screen.findByRole('button', { name: /Sign in/iu })).toBeVisible();
   });
 
   it('logs safe diagnostics when password change fails before an API response', async () => {
@@ -261,7 +259,7 @@ describe('browser authentication lifecycle', () => {
       fireEvent.change(screen.getByLabelText('Password'), {
         target: { value: 'temporary-secret' },
       });
-      fireEvent.click(screen.getByRole('button', { name: /Continue to workspace/iu }));
+      fireEvent.click(screen.getByRole('button', { name: /Sign in/iu }));
 
       expect(await screen.findByRole('heading', { name: 'Set a new password.' })).toBeVisible();
       fireEvent.change(screen.getByLabelText('Current password'), {

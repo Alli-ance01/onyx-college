@@ -6,9 +6,78 @@ async function signIn(page: Page, username: string) {
   await page.goto('/auth/login');
   await page.getByLabel('Username, email, or phone').fill(username);
   await page.locator('input[name="password"]').fill(testPassword);
-  await page.getByRole('button', { name: 'Continue to workspace' }).click();
+  await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page.locator('.portal-main')).toBeVisible();
 }
+
+test('sign-in controls remain usable on phones and desktops', async ({ page }, testInfo) => {
+  await page.goto('/auth/login');
+  await expect(page.getByRole('heading', { name: 'Sign in to Onyx.' })).toBeVisible();
+  for (const width of [1440, 768, 390, 320]) {
+    await page.setViewportSize({ width, height: 900 });
+    await expect(page.getByRole('button', { name: 'Sign in', exact: true })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      width,
+    );
+    if (width === 1440 || width === 390)
+      await page.screenshot({
+        path: testInfo.outputPath(`sign-in-${String(width)}.png`),
+        fullPage: true,
+      });
+  }
+  await page.getByRole('button', { name: 'Show password' }).click();
+  await expect(page.locator('input[name="password"]')).toHaveAttribute('type', 'text');
+  await page.getByRole('button', { name: 'Hide password' }).click();
+  await expect(page.locator('input[name="password"]')).toHaveAttribute('type', 'password');
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await expect(page.getByLabel('Username, email, or phone')).toHaveAttribute(
+    'aria-invalid',
+    'true',
+  );
+  await expect(page.getByText('Enter your password.', { exact: true })).toBeVisible();
+});
+
+test('admin creates a session with three terms and duplicate errors preserve the input', async ({
+  page,
+}) => {
+  await signIn(page, accounts.admin);
+  await page.getByRole('navigation').getByRole('link', { name: 'Sessions', exact: true }).click();
+  const label = page.getByLabel('Session label', { exact: true });
+  await label.fill('2027/2028');
+  await page.getByRole('button', { name: 'Create session', exact: true }).click();
+  await expect(
+    page.getByRole('status').filter({ hasText: 'Session 2027/2028 created with three terms.' }),
+  ).toBeVisible();
+  await expect(label).toHaveValue('');
+  await expect(page.getByRole('heading', { name: '2027/2028', exact: true })).toBeVisible();
+  await expect(page.locator('.term-row')).toHaveCount(6);
+  await label.fill('2027/2028');
+  await page.getByRole('button', { name: 'Create session', exact: true }).click();
+  await expect(page.getByRole('alert')).toHaveText('This academic session already exists.');
+  await expect(label).toHaveValue('2027/2028');
+});
+
+test('sign out reports network failures and supports retry before returning to sign in', async ({
+  page,
+}) => {
+  await signIn(page, accounts.student);
+  const endpoint = '**/api/v1/auth/logout';
+  await page.route(endpoint, (route) =>
+    route.fulfill({
+      status: 503,
+      contentType: 'application/json',
+      body: JSON.stringify({ error: { code: 'UNAVAILABLE', message: 'Try again' } }),
+    }),
+  );
+  await page.getByRole('button', { name: 'Sign out', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('Could not sign out');
+  await expect(page).toHaveURL(/\/student\/dashboard$/u);
+  await page.unroute(endpoint);
+  await page.getByRole('button', { name: 'Sign out', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Sign in to Onyx.' })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'Sign in to Onyx.' })).toBeVisible();
+});
 
 for (const role of ['admin', 'student'] as const) {
   test(`${role} sign-in and responsive navigation`, async ({ page }) => {

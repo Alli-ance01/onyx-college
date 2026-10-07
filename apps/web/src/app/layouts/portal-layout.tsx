@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router';
 
 import { useAuthSession } from '../../lib/auth/use-auth-session.js';
+import { SignOutButton } from '../../features/auth/sign-out-button.js';
 
 type PortalName = 'Admin Portal' | 'Student Portal' | 'Teacher Portal';
 
@@ -544,9 +545,7 @@ export function PortalLayout({ portalName }: PortalLayoutProps) {
             <Link className="portal-header__password" to="/auth/change-password">
               Security
             </Link>
-            <button className="text-button" onClick={() => void auth.logout()} type="button">
-              Sign out
-            </button>
+            <SignOutButton />
           </div>
         </header>
         <div className="portal-view" id="main-content">
