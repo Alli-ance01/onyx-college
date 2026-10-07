@@ -40,9 +40,12 @@ export function AdminSessionsPage() {
 
   function submit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    create.mutate(formText(form, 'label'));
-    event.currentTarget.reset();
+    const form = event.currentTarget;
+    create.mutate(formText(new FormData(form), 'label'), {
+      onSuccess: () => {
+        form.reset();
+      },
+    });
   }
 
   return (
@@ -58,18 +61,37 @@ export function AdminSessionsPage() {
       >
         <form className="inline-form" onSubmit={submit}>
           <FormField controlId="session-label" label="Session label">
-            <input name="label" pattern="\d{4}/\d{4}" placeholder="2026/2027" required />
+            <input
+              id="session-label"
+              name="label"
+              pattern="\d{4}/\d{4}"
+              placeholder="2026/2027"
+              required
+              disabled={create.isPending}
+            />
           </FormField>
-          <Button loading={create.isPending} type="submit">
+          <Button loading={create.isPending} loadingLabel="Creating session…" type="submit">
             Create session
           </Button>
         </form>
         {errorMessage(create.error) === undefined ? null : (
-          <p className="form-alert form-alert--error">{errorMessage(create.error)}</p>
+          <p className="form-alert form-alert--error" role="alert">
+            {errorMessage(create.error)}
+          </p>
         )}
+        {create.isSuccess ? (
+          <p className="form-alert" role="status">
+            Session {create.data.label} created with three terms.
+          </p>
+        ) : null}
       </Panel>
       {sessions.isError ? (
         <ErrorState onRetry={() => void sessions.refetch()} title="Sessions unavailable" />
+      ) : null}
+      {activate.isError ? (
+        <p className="form-alert form-alert--error" role="alert">
+          {errorMessage(activate.error)}
+        </p>
       ) : null}
       <div className="admin-card-list">
         {sessions.data?.map((session) => (

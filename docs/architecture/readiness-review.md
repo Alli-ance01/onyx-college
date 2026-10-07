@@ -23,6 +23,14 @@ Recorded results: 53 API unit tests, 19 frontend component tests, 24 MongoDB int
 
 ## Remaining release work
 
+### Follow-up: academic session creation and portal controls
+
+The session-creation path was reproduced failing with Mongoose's rejection of multiple `create()` documents in a transaction without `ordered: true`. The term insertion now uses ordered writes, retaining the transaction across session, terms, and audit. Only duplicate-key database errors become a 409 conflict; other database failures are no longer mislabeled as duplicates. Integration coverage verifies creation, duplicate handling, rollback, and unexpected database errors. The browser suite exercises session creation and keeps failed submissions editable.
+
+Sign-in now uses the shared loading button and clearer account guidance, with a compact mobile form, accessible validation, and password visibility controls. Shared controls have consistent sizing, focus and pressed states. Sign-out reports progress and lets the user retry a failed server request; it no longer presents a successful local sign-out while the refresh cookie may remain valid. Browser coverage includes sign-out retry and reload after success. The API fix must be deployed to the Render service; a frontend preview alone does not change the hosted session-creation endpoint.
+
+### Release checklist
+
 1. Run the [production deployment runbook](production-deployment-runbook.md) against the intended staging providers: migrations/indexes, HTTPS, exact origins, proxy trust, cookie persistence/rotation, readiness, and production startup. No deployment was performed in this review.
 2. Exercise Cloudinary upload, protected viewing, expiry, replacement, and deletion using staging credentials. The local adapter tests do not prove provider configuration. Review file inspection and malware handling for uploaded school documents.
 3. Demonstrate a database backup restore and establish uptime/error monitoring with a responsible operator. Select hosting capacity and availability appropriate to school hours; free-tier behavior is not an uptime guarantee.

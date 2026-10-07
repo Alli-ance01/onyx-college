@@ -6,6 +6,7 @@ import { z } from 'zod';
 
 import { ApiClientError } from '../../lib/api/api-client.js';
 import { useAuthSession } from '../../lib/auth/use-auth-session.js';
+import { Button } from '../../shared/ui/button.js';
 
 const loginSchema = z.object({
   identifier: z.string().trim().min(3, 'Enter your username, email, or phone number.'),
@@ -164,27 +165,25 @@ export function LoginPage() {
   });
 
   return (
-    <main className="auth-content auth-content--split">
+    <main className="auth-content auth-content--split auth-content--login">
       <AuthAside
-        description="One considered entry point for every role in the Onyx community. Your workspace opens with the right tools, permissions, and next step."
-        eyebrow="A calmer school day"
+        description="Your classes, school records, and daily tasks in one place. Sign in to open your student, teacher, or admin workspace."
+        eyebrow="Onyx College Portal"
         steps={[
-          'Use the access details issued by your school.',
-          'We will take you to the right workspace.',
-          'Keep your work private and close at hand.',
+          'Students: use the account you created when applying.',
+          'Staff: use the credentials provided by the school.',
+          'On a shared device? Sign out when you finish.',
         ]}
-        title="Your school day, in better order."
+        title="Your school. Your workspace."
       />
       <section className="auth-card surface" aria-labelledby="login-heading">
         <div className="auth-card__topline">
-          <span>01</span>
+          <span>O</span>
           <span>Secure access</span>
         </div>
         <p className="eyebrow">Welcome back</p>
         <h1 id="login-heading">Sign in to Onyx.</h1>
-        <p className="auth-card__intro">
-          Use the account credentials issued for your portal access.
-        </p>
+        <p className="auth-card__intro">Enter your details to continue to your workspace.</p>
         {auth.status === 'expired' && (
           <div className="form-alert" role="status">
             Your session ended. Sign in again to continue.
@@ -206,22 +205,35 @@ export function LoginPage() {
             <span>Username, email, or phone</span>
             <input
               aria-invalid={errors.identifier !== undefined}
+              aria-describedby={
+                errors.identifier === undefined ? undefined : 'login-identifier-error'
+              }
+              autoCapitalize="none"
+              spellCheck={false}
               autoComplete="username"
               {...register('identifier')}
             />
-            {errors.identifier && <span className="field-error">{errors.identifier.message}</span>}
+            {errors.identifier && (
+              <span id="login-identifier-error" className="field-error">
+                {errors.identifier.message}
+              </span>
+            )}
           </label>
           <label className="auth-field">
             <span>Password</span>
             <span className="auth-input-wrap">
               <input
                 aria-invalid={errors.password !== undefined}
+                aria-describedby={
+                  errors.password === undefined ? undefined : 'login-password-error'
+                }
                 autoComplete="current-password"
                 type={showPassword ? 'text' : 'password'}
                 {...register('password')}
               />
               <button
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
+                aria-pressed={showPassword}
                 className="password-toggle"
                 onClick={() => {
                   setShowPassword((value) => !value);
@@ -231,15 +243,27 @@ export function LoginPage() {
                 {showPassword ? 'Hide' : 'Show'}
               </button>
             </span>
-            {errors.password && <span className="field-error">{errors.password.message}</span>}
+            {errors.password && (
+              <span id="login-password-error" className="field-error">
+                {errors.password.message}
+              </span>
+            )}
           </label>
-          <button className="primary-button auth-submit" disabled={isSubmitting} type="submit">
-            <span>{isSubmitting ? 'Signing in…' : 'Continue to workspace'}</span>
-            <span aria-hidden="true">↗</span>
-          </button>
+          <Button
+            className="auth-submit"
+            loading={isSubmitting}
+            loadingLabel="Signing in…"
+            type="submit"
+          >
+            <span>Sign in</span>
+            <span aria-hidden="true">→</span>
+          </Button>
         </form>
         <p className="auth-card__footer">
           <span>Need an applicant account?</span> <a href="/student-signup">Start an application</a>
+        </p>
+        <p className="auth-help">
+          Having trouble signing in? Contact the school office for help with your account.
         </p>
       </section>
     </main>
