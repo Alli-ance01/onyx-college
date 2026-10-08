@@ -294,7 +294,7 @@ export function TeacherAnnouncementsPage() {
   return (
     <main className="portal-content product-page">
       <PageHeader
-        description="Create notices only for classes inside your assigned academic scope."
+        description="Share updates with the classes you teach."
         eyebrow="Communication"
         title="Announcements"
       />

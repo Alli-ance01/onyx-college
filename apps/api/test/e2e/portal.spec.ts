@@ -41,7 +41,10 @@ test('admin creates a session with three terms and duplicate errors preserve the
   page,
 }) => {
   await signIn(page, accounts.admin);
-  await page.getByRole('navigation').getByRole('link', { name: 'Sessions', exact: true }).click();
+  await page
+    .getByRole('navigation', { name: /Portal navigation/ })
+    .getByRole('link', { name: 'Sessions', exact: true })
+    .click();
   const label = page.getByLabel('Session label', { exact: true });
   await label.fill('2027/2028');
   await page.getByRole('button', { name: 'Create session', exact: true }).click();
@@ -149,7 +152,10 @@ test('student sections load without failed API requests or runtime errors', asyn
     ['Settings', 'Settings'],
   ] as const;
   for (const [link, heading] of destinations) {
-    await page.getByRole('navigation').getByRole('link', { name: link, exact: true }).click();
+    await page
+      .getByRole('navigation', { name: /Portal navigation/ })
+      .getByRole('link', { name: link, exact: true })
+      .click();
     await expect(page.locator('main h1')).toHaveText(heading);
     await expect(page.locator('main [aria-busy="true"]')).toHaveCount(0);
     await expect(page.locator('main [role="alert"]')).toHaveCount(0);
@@ -181,7 +187,7 @@ test('administrator approves a registration and the applicant enters the student
 }) => {
   await signIn(page, accounts.admin);
   await page
-    .getByRole('navigation')
+    .getByRole('navigation', { name: /Portal navigation/ })
     .getByRole('link', { name: 'Registration review', exact: true })
     .click();
   await page.getByRole('link', { name: 'Open review' }).click();
@@ -223,4 +229,179 @@ test('a failed student directory load offers a retry and recovers', async ({ pag
   await page.getByRole('button', { name: 'Try again', exact: true }).click();
   await expect(page.getByRole('cell', { name: 'Amara Okafor', exact: true })).toBeVisible();
   await expect(page.getByRole('alert')).toHaveCount(0);
+});
+
+test('teacher pages and overview remain usable across screen sizes', async ({ page }, testInfo) => {
+  const failures: string[] = [];
+  page.on('pageerror', (error) => failures.push(error.message));
+  await signIn(page, accounts.teacher);
+  await expect(page.getByRole('heading', { name: 'Welcome, Tomi' })).toBeVisible();
+  for (const width of [1440, 768, 390, 320]) {
+    await page.setViewportSize({ width, height: 900 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      width,
+    );
+    if (width === 1440 || width === 390)
+      await page.screenshot({
+        path: testInfo.outputPath(`teacher-${String(width)}.png`),
+        fullPage: true,
+      });
+  }
+  for (const [route, heading] of [
+    ['classes', 'My classes'],
+    ['subjects', 'My subjects'],
+    ['students', 'Students'],
+    ['assignments', 'Assignments'],
+    ['results', 'Results'],
+    ['announcements', 'Announcements'],
+    ['profile', 'Tomi Adebayo'],
+  ] as const) {
+    await page.goto(`/teacher/${route}`);
+    await expect(page.locator('main h1')).toHaveText(heading);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      320,
+    );
+  }
+  expect(failures).toEqual([]);
+});
+
+test('page search finds contextual destinations and missing routes offer recovery', async ({
+  page,
+}) => {
+  await signIn(page, accounts.admin);
+  const search = page.getByRole('textbox', { name: 'Find a page' });
+  await search.fill('grading');
+  await page
+    .getByRole('navigation', { name: 'Admin Portal navigation' })
+    .getByRole('link', { name: 'Grading configuration' })
+    .click();
+  await expect(page.locator('main h1')).toHaveText('Grading schemes');
+  await expect(search).toHaveValue('');
+  await page.goto('/admin/missing-page');
+  await expect(page.getByRole('heading', { name: 'Let’s find your way back.' })).toBeVisible();
+  await page.getByRole('link', { name: 'Return to overview' }).click();
+  await expect(page.locator('main h1')).toHaveText('School overview');
+});
+
+test('branded public pages and portal records fit phones and desktops', async ({
+  page,
+}, testInfo) => {
+  for (const [name, route] of [
+    ['home', '/'],
+    ['application', '/student-signup'],
+  ] as const) {
+    await page.goto(route);
+    for (const width of [1440, 390, 320]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.evaluate(() => document.fonts.ready);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+        width,
+      );
+      if (width !== 320)
+        await page.screenshot({
+          path: testInfo.outputPath(`${name}-${String(width)}.png`),
+          fullPage: true,
+        });
+    }
+  }
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await signIn(page, accounts.admin);
+  await expect(page.locator('main h1')).toHaveText('School overview');
+  await page.screenshot({ path: testInfo.outputPath('admin-1440.png'), fullPage: true });
+  await page.goto('/admin/students');
+  await expect(page.getByRole('cell', { name: 'Amara Okafor', exact: true })).toBeVisible();
+  for (const width of [1440, 390, 320]) {
+    await page.setViewportSize({ width, height: 900 });
+    await expect(page.getByRole('cell', { name: 'Amara Okafor', exact: true })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      width,
+    );
+    if (width !== 320)
+      await page.screenshot({
+        path: testInfo.outputPath(`directory-${String(width)}.png`),
+        fullPage: true,
+      });
+  }
+  await page.getByRole('button', { name: 'Sign out', exact: true }).click();
+  await signIn(page, accounts.student);
+  await expect(page.getByRole('heading', { name: 'Your classwork' })).toBeVisible();
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.screenshot({
+      path: testInfo.outputPath(`student-${String(width)}.png`),
+      fullPage: true,
+    });
+  }
+});
+
+test('student directory searches survive profile navigation and reloads', async ({ page }) => {
+  await signIn(page, accounts.admin);
+  await page.goto('/admin/students');
+  await page.getByRole('textbox', { name: 'Search', exact: true }).fill('Amara');
+  await expect(page).toHaveURL(/q=Amara/);
+  await expect(page.getByRole('cell', { name: 'Amara Okafor', exact: true })).toBeVisible();
+  await page
+    .getByRole('row')
+    .filter({ hasText: 'Amara Okafor' })
+    .getByRole('link', { name: 'View profile' })
+    .click();
+  await expect(page.locator('main h1')).toHaveText('Amara Okafor');
+  await page.goBack();
+  await expect(page.getByRole('textbox', { name: 'Search', exact: true })).toHaveValue('Amara');
+  await page.reload();
+  await expect(page.getByRole('textbox', { name: 'Search', exact: true })).toHaveValue('Amara');
+  await page.getByRole('button', { name: 'Filters', exact: true }).click();
+  await page.getByRole('combobox', { name: 'Gender', exact: true }).selectOption('Female');
+  await expect(page).toHaveURL(/gender=Female/);
+  await expect(page.getByRole('button', { name: 'Filters (1)' })).toHaveAttribute(
+    'aria-expanded',
+    'true',
+  );
+  await page.getByRole('button', { name: 'Clear filters' }).click();
+  await expect(page.getByRole('textbox', { name: 'Search', exact: true })).toHaveValue('');
+  await expect(page).toHaveURL(/\/admin\/students$/);
+});
+
+test('admin workspaces load and fit a narrow phone', async ({ page }) => {
+  await signIn(page, accounts.admin);
+  await page.setViewportSize({ width: 320, height: 900 });
+  const failures: string[] = [];
+  page.on('pageerror', (error) => failures.push(error.message));
+  for (const route of [
+    'students/registrations',
+    'students/corrections',
+    'teachers',
+    'teachers/approvals',
+    'teachers/invitations',
+    'teachers/assignments',
+    'academics/sessions',
+    'academics/classes',
+    'academics/tracks',
+    'academics/subjects',
+    'academics/subject-offerings',
+    'academics/promotions',
+    'assignments',
+    'announcements',
+    'results',
+    'results/assessment-schemes',
+    'results/grading-schemes',
+    'results/review',
+    'results/approval',
+    'results/publishing',
+    'results/corrections',
+    'access/administrators',
+    'access/roles',
+    'access/permissions',
+    'documents',
+    'audit',
+    'notifications',
+    'settings',
+  ]) {
+    await page.goto(`/admin/${route}`);
+    await expect(page.locator('main h1')).toBeVisible();
+    expect
+      .soft(await page.evaluate(() => document.documentElement.scrollWidth), route)
+      .toBeLessThanOrEqual(320);
+  }
+  expect(failures).toEqual([]);
 });

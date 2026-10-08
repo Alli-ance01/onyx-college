@@ -426,6 +426,12 @@ importers:
 
   apps/web:
     dependencies:
+      '@fontsource-variable/dm-sans':
+        specifier: 5.3.0
+        version: 5.3.0
+      '@fontsource-variable/newsreader':
+        specifier: 5.3.0
+        version: 5.3.0
       '@hookform/resolvers':
         specifier: 'catalog:'
         version: 5.9.1(@standard-schema/spec@1.1.0)(react-hook-form@7.88.0(react@19.3.0))(zod@4.6.5)
@@ -832,6 +838,12 @@ packages:
     peerDependenciesMeta:
       '@noble/hashes':
         optional: true
+
+  '@fontsource-variable/dm-sans@5.3.0':
+    resolution: {integrity: sha512-BpUG5bqePiDFMBM4ZtLSlPdAIOM990uB1dlXzIf4aw21yQR7BmykedLXXXMqGWsR18aMLOsbWccwJNh3ztTQaA==}
+
+  '@fontsource-variable/newsreader@5.3.0':
+    resolution: {integrity: sha512-rrzYi43qMpbzwuFtf9OkWH8sxAPVPcQQQEwXpPtwaKYeJ8yVg5aLs5kawmo1f2Q1t1M38TLmEKCkGVDsYwgdFw==}
 
   '@grpc/grpc-js@1.14.5':
     resolution: {integrity: sha512-7VZM+SVdEcUUqSQeNI3zM8Qs/BhQKZndPo2h5VkYkAM8Iz0wJIa8mKV5ekQGqG8UUsnkQ0NMxIxwkIHYvj0qOw==}
@@ -3467,6 +3479,10 @@ snapshots:
   '@exodus/bytes@1.16.0(@noble/hashes@1.8.0)':
     optionalDependencies:
       '@noble/hashes': 1.8.0
+
+  '@fontsource-variable/dm-sans@5.3.0': {}
+
+  '@fontsource-variable/newsreader@5.3.0': {}
 
   '@grpc/grpc-js@1.14.5':
     dependencies:

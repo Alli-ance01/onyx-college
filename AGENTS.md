@@ -365,7 +365,7 @@ Do not tightly couple application behavior to the first visual design.
 
 ## Initial UI Direction
 
-Until a separate approved design system exists, use a professional school administration SaaS visual direction:
+The school owner approved a light-blue redesign on 8 October 2026. Use `docs/architecture/design-direction.md` for the current design system. The original MVP direction below is retained as historical context only:
 
 - dark navy navigation
 - restrained amber/gold accent

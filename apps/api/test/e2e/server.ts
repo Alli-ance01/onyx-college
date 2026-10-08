@@ -171,6 +171,44 @@ for (const [username, firstName, surname, phone, approve] of [
   }
 }
 
+// Create staff through the same approval and credential flow used by the school.
+const staff = await agent
+  .post('/api/v1/teachers')
+  .auth(adminToken, { type: 'bearer' })
+  .send({ username: accounts.teacher, firstName: 'Tomi', lastName: 'Adebayo' })
+  .expect(201);
+const staffLogin = await agent
+  .post('/api/v1/auth/login')
+  .set('Origin', origin)
+  .send({ identifier: accounts.teacher, password: text(staff, 'data', 'temporaryPassword') })
+  .expect(200);
+await agent
+  .post('/api/v1/auth/change-password')
+  .set('Origin', origin)
+  .auth(text(staffLogin, 'data', 'accessToken'), { type: 'bearer' })
+  .set('X-CSRF-Token', text(staffLogin, 'data', 'csrfToken'))
+  .send({ currentPassword: text(staff, 'data', 'temporaryPassword'), newPassword: password })
+  .expect(200);
+const staffRegistrations = await agent
+  .get('/api/v1/teacher-registrations')
+  .auth(adminToken, { type: 'bearer' })
+  .expect(200);
+await agent
+  .post(`/api/v1/teacher-registrations/${text(staffRegistrations, 'data', 0, 'id')}/approve`)
+  .auth(adminToken, { type: 'bearer' })
+  .send({ note: 'Approved synthetic browser-test teacher.' })
+  .expect(200);
+await agent
+  .post('/api/v1/teaching-assignments')
+  .auth(adminToken, { type: 'bearer' })
+  .send({
+    academicSessionId: text(setup, 'data', 'activeSession', 'id'),
+    classLevelId: classLevel.id,
+    teacherId: text(staff, 'data', 'teacherId'),
+    type: 'CLASS_TEACHER',
+  })
+  .expect(201);
+
 const server = app.listen(4001, '127.0.0.1', () =>
   process.stdout.write('Isolated browser-test API ready.\n'),
 );

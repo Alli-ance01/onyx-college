@@ -1,3 +1,4 @@
+import { SchoolCrest } from '../../shared/ui/brand.js';
 import type { SuccessEnvelope } from '@onyx/contracts';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -48,11 +49,9 @@ export function StudentSignupPage() {
   return (
     <main className="auth-content auth-content--split">
       <aside className="auth-aside" aria-label="Onyx College application guidance">
-        <div className="auth-aside__mark" aria-hidden="true">
-          O
-        </div>
+        <SchoolCrest className="school-crest--auth" />
         <p className="eyebrow">Student admissions</p>
-        <h2>Your next chapter starts with a clear first step.</h2>
+        <h2>Your Onyx story starts here.</h2>
         <p className="auth-aside__description">
           Create one account for your application, documents, and updates from the school.
         </p>
@@ -70,7 +69,7 @@ export function StudentSignupPage() {
             <span>Track review and next steps.</span>
           </li>
         </ol>
-        <p className="auth-aside__footer">A considered start makes the rest clearer.</p>
+        <p className="auth-aside__footer">Onyx College · We trust in excellence</p>
       </aside>
       <section className="auth-card surface signup-card" aria-labelledby="signup-title">
         <div className="auth-card__topline">
