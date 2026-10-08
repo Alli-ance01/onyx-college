@@ -151,7 +151,7 @@ export function AdminReferenceStructurePage({ view }: { view: 'classes' | 'track
         title={isClasses ? 'Classes' : 'Senior tracks'}
       />
       <Panel
-        description="These canonical V1 records are persisted during academic setup."
+        description="Manage the class levels and tracks used for student placement."
         title="Configured records"
       >
         <DataTable

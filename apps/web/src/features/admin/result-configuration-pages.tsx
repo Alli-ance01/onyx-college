@@ -81,7 +81,7 @@ export function AdminAssessmentSchemesPage() {
   return (
     <main className="portal-content product-page">
       <PageHeader
-        description="Configure named score components and maxima; totals remain server-authoritative."
+        description="Set the assessment components and maximum marks used when teachers enter results."
         eyebrow="Results configuration"
         title="Assessment schemes"
       />

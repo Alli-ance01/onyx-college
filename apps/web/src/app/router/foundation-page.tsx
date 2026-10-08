@@ -1,37 +1,19 @@
+import { SchoolCrest } from '../../shared/ui/brand.js';
 import { Link } from 'react-router';
 
-interface FoundationPageProps {
-  description: string;
-  eyebrow: string;
-  title: string;
-  variant?: 'portal' | 'public';
-}
-
-export function FoundationPage({
-  description,
-  eyebrow,
-  title,
-  variant = 'public',
-}: FoundationPageProps) {
-  if (variant === 'portal') {
-    return (
-      <main className="portal-content product-page">
-        <section className="surface foundation-panel" aria-labelledby="foundation-title">
-          <p className="eyebrow">{eyebrow}</p>
-          <h1 id="foundation-title">{title}</h1>
-          <p className="foundation-panel__summary">{description}</p>
-        </section>
-      </main>
-    );
-  }
-
+export function FoundationPage() {
   return (
     <main className="public-content public-home" id="workspace">
       <section className="school-hero" aria-labelledby="foundation-title">
         <div className="school-hero__copy">
-          <p className="eyebrow">{eyebrow}</p>
-          <h1 id="foundation-title">{title}</h1>
-          <p className="school-hero__summary">{description}</p>
+          <p className="eyebrow">School life at Onyx</p>
+          <h1 id="foundation-title">
+            We trust in <em>excellence.</em>
+          </h1>
+          <p className="school-hero__summary">
+            Your classes, school news, and next steps — all together. A shared space for students,
+            teachers, and the people who keep Onyx moving.
+          </p>
           <div className="school-hero__actions">
             <Link className="button-link" to="/auth/login">
               Sign in to the portal
@@ -42,8 +24,9 @@ export function FoundationPage({
           </div>
         </div>
         <aside className="school-hero__notice" aria-label="Portal information">
-          <p className="eyebrow">Portal access</p>
-          <h2>Everything in one secure place.</h2>
+          <SchoolCrest className="school-crest--hero" />
+          <p className="eyebrow">Onyx College</p>
+          <h2>Your school. Your next chapter.</h2>
           <p>
             Students, teachers, and administrators use the portal for school records, communication,
             results, and everyday work.
@@ -81,7 +64,7 @@ export function FoundationPage({
           <strong>Need help signing in?</strong>
           <span>Use the credentials issued by the school or contact the school office.</span>
         </div>
-        <a href="/api/v1/health/live">System status</a>
+        <Link to="/auth/login">Return to sign in →</Link>
       </section>
     </main>
   );

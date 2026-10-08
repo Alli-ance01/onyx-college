@@ -76,7 +76,10 @@ export function DataTable<Row>({
                   data-label={column.header}
                   key={column.id}
                 >
-                  {column.render(row)}
+                  <span className="ui-table__mobile-label" aria-hidden="true">
+                    {column.header}
+                  </span>
+                  <div className="ui-table__value">{column.render(row)}</div>
                 </td>
               ))}
             </tr>

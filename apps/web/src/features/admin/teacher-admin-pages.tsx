@@ -444,7 +444,7 @@ export function AdminTeachingAssignmentsPage() {
   return (
     <main className="portal-content product-page">
       <PageHeader
-        description="Assign academic authority by session, class, track, and subject. Role membership alone is never sufficient."
+        description="Choose which classes and subjects each teacher is responsible for this session."
         eyebrow="Scoped authorization"
         title="Teaching assignments"
       />

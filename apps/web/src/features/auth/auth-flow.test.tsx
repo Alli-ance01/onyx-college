@@ -107,9 +107,7 @@ describe('browser authentication lifecycle', () => {
       target: { value: 'a-secure-password' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
-    expect(
-      await screen.findByRole('heading', { name: 'Good day, System Administrator' }),
-    ).toBeVisible();
+    expect(await screen.findByRole('heading', { name: 'School overview' })).toBeVisible();
   });
 
   it('restores a refresh-cookie session and enters its role-aware shell', async () => {
@@ -129,9 +127,7 @@ describe('browser authentication lifecycle', () => {
 
     renderApp('/admin', fetchMock);
 
-    expect(
-      await screen.findByRole('heading', { name: 'Good day, System Administrator' }),
-    ).toBeVisible();
+    expect(await screen.findByRole('heading', { name: 'School overview' })).toBeVisible();
     expect(screen.getByText('System Administrator')).toBeVisible();
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(fetchMock.mock.calls[1]?.[1]).toMatchObject({

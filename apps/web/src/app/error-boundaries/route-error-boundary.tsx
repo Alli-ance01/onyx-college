@@ -24,9 +24,9 @@ export function RouteErrorBoundary() {
           <Link className="button-link button-link--arrow" to="/">
             Return to Onyx home <span aria-hidden="true">↗</span>
           </Link>
-          <a className="text-link" href="/api/v1/health/live">
-            Check system status
-          </a>
+          <Link className="text-link" to="/auth/login">
+            Go to sign in
+          </Link>
         </div>
         <p className="fatal-error__code" aria-hidden="true">
           {isNotFound ? '404 / NOT FOUND' : 'UNAVAILABLE / RETRY'}

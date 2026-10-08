@@ -1,3 +1,5 @@
+import { Panel, EmptyState } from '../../shared/ui/index.js';
+import { Icon } from '../../shared/ui/icon.js';
 import type { StudentDashboardDto, StudentProfileDto, SuccessEnvelope } from '@onyx/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -53,7 +55,10 @@ export function StudentDashboardPage() {
         <div>
           <p className="eyebrow">Student dashboard</p>
           <h1>Welcome, {student.studentName}</h1>
-          <p>Your current institutional and academic details.</p>
+          <p>
+            Your school day starts here. Check your work, catch up on notices, and see your
+            progress.
+          </p>
         </div>
         <span className="status-badge status-badge--success">{student.lifecycleStatus}</span>
       </header>
@@ -87,9 +92,11 @@ export function StudentDashboardPage() {
           href="/student/assignments"
           title="Assignments"
           text={
-            assignments.isError
-              ? 'Assignments could not be loaded.'
-              : (assignments.data?.[0]?.title ?? 'No assignments have been published.')
+            assignments.isPending
+              ? 'Loading your assignments…'
+              : assignments.isError
+                ? 'Assignments could not be loaded.'
+                : 'Classwork and instructions from your teachers.'
           }
         />
         <ModuleSummary
@@ -97,9 +104,11 @@ export function StudentDashboardPage() {
           href="/student/announcements"
           title="Announcements"
           text={
-            announcements.isError
-              ? 'Announcements could not be loaded.'
-              : (announcements.data?.[0]?.title ?? 'There are no current announcements.')
+            announcements.isPending
+              ? 'Loading school notices…'
+              : announcements.isError
+                ? 'Announcements could not be loaded.'
+                : 'Updates from your classes and the school.'
           }
         />
         <ModuleSummary
@@ -107,14 +116,73 @@ export function StudentDashboardPage() {
           href="/student/results"
           title="Results"
           text={
-            reports.isError
-              ? 'Results could not be loaded.'
-              : reports.data?.[0] === undefined
-                ? 'No report cards have been published.'
-                : `${reports.data[0].sessionLabel} / ${reports.data[0].termName}`
+            reports.isPending
+              ? 'Loading your results…'
+              : reports.isError
+                ? 'Results could not be loaded.'
+                : reports.data[0] === undefined
+                  ? 'No report cards have been published.'
+                  : `${reports.data[0].sessionLabel} / ${reports.data[0].termName}`
           }
         />
       </section>
+      <div className="student-day-grid">
+        <Panel title="Your classwork" description="The latest assignments shared by your teachers.">
+          {assignments.isError ? (
+            <ErrorState title="Classwork unavailable" onRetry={() => void assignments.refetch()} />
+          ) : assignments.isPending ? (
+            <p role="status">Loading classwork…</p>
+          ) : assignments.data.length === 0 ? (
+            <EmptyState
+              title="You’re all caught up"
+              description="When your teachers publish assignments, you can find them here."
+            />
+          ) : (
+            <ul className="record-list">
+              {assignments.data.slice(0, 3).map((item) => (
+                <li key={item.id}>
+                  <Link to="/student/assignments">{item.title}</Link>
+                  <small>Open assignments for instructions and due dates</small>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
+        <Panel title="From the school" description="Stay connected with what’s happening at Onyx.">
+          {announcements.isError ? (
+            <ErrorState title="Notices unavailable" onRetry={() => void announcements.refetch()} />
+          ) : announcements.isPending ? (
+            <p role="status">Loading notices…</p>
+          ) : announcements.data.length === 0 ? (
+            <EmptyState
+              title="A quiet noticeboard"
+              description="New school and class announcements will appear here."
+            />
+          ) : (
+            <ul className="record-list">
+              {announcements.data.slice(0, 3).map((item) => (
+                <li key={item.id}>
+                  <Link to="/student/announcements">{item.title}</Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
+      </div>
+      <div className="student-quick-links" aria-label="Student shortcuts">
+        <Link to="/student/subjects">
+          <Icon name="book" />
+          My subjects
+        </Link>
+        <Link to="/student/academic-history">
+          <Icon name="calendar" />
+          My academic journey
+        </Link>
+        <Link to="/student/profile">
+          <Icon name="people" />
+          My profile
+        </Link>
+      </div>
     </main>
   );
 }

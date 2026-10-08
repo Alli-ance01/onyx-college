@@ -7,6 +7,7 @@ import { useAuthSession } from '../../lib/auth/use-auth-session.js';
 import { formText } from '../../shared/forms/form-data.js';
 import {
   Button,
+  ErrorState,
   DataTable,
   FormField,
   PageHeader,
@@ -47,51 +48,75 @@ export function AdminDashboardPage() {
   });
   const activeSession = sessions.data?.find((item) => item.status === 'ACTIVE');
   const pendingTeachers =
-    teachers.data?.filter((item) => item.status === 'PENDING_APPROVAL').length ?? 0;
+    teachers.data?.filter((item) => item.status === 'PENDING_APPROVAL').length ?? '—';
   const resultAttention =
     batches.data?.filter((item) => ['SUBMITTED', 'UNDER_REVIEW', 'APPROVED'].includes(item.status))
-      .length ?? 0;
+      .length ?? '—';
 
   return (
     <main className="portal-content product-page admin-dashboard">
       <PageHeader
         description="A summary of the school areas that need attention today."
         eyebrow="Administration"
-        title={`Good day, ${auth.principal?.displayName ?? 'Administrator'}`}
+        title="School overview"
       />
+      {teachers.isError || sessions.isError || batches.isError ? (
+        <ErrorState
+          title="Some overview information is unavailable"
+          onRetry={() => {
+            if (teachers.isError) void teachers.refetch();
+            if (sessions.isError) void sessions.refetch();
+            if (batches.isError) void batches.refetch();
+          }}
+        />
+      ) : null}
       <section className="admin-context-bar" aria-label="Current academic context">
         <div>
           <span>Current academic session</span>
-          <strong>{activeSession?.label ?? 'No active session'}</strong>
+          <strong>
+            {!permissions.has('sessions.manage')
+              ? 'Managed by the academic office'
+              : sessions.isPending
+                ? 'Loading…'
+                : sessions.isError
+                  ? 'Unavailable'
+                  : (activeSession?.label ?? 'No active session')}
+          </strong>
         </div>
         <div>
           <span>Current term</span>
           <strong>
-            {activeSession?.terms.find((item) => item.status === 'ACTIVE')?.name ??
-              'No active term'}
+            {!permissions.has('sessions.manage')
+              ? '—'
+              : sessions.isPending
+                ? 'Loading…'
+                : sessions.isError
+                  ? 'Unavailable'
+                  : (activeSession?.terms.find((item) => item.status === 'ACTIVE')?.name ??
+                    'No active term')}
           </strong>
         </div>
         <div>
-          <span>Signed in as</span>
-          <strong>{auth.principal?.roles.join(', ') ?? 'Administrator'}</strong>
+          <span>Workspace</span>
+          <strong>School administration</strong>
         </div>
       </section>
       <section aria-labelledby="admin-overview-title">
         <div className="admin-section-heading">
           <div>
             <p className="eyebrow">At a glance</p>
-            <h2 id="admin-overview-title">School overview</h2>
+            <h2 id="admin-overview-title">Today at Onyx</h2>
           </div>
         </div>
         <div className="metric-grid admin-metric-grid">
           {permissions.has('teachers.read') ? (
             <Link className="admin-metric-card" to="/admin/teachers">
               <span>Teachers</span>
-              <strong>{teachers.data?.length ?? 0}</strong>
+              <strong>{teachers.data?.length ?? '—'}</strong>
               <small>View staff directory →</small>
             </Link>
           ) : null}
-          {permissions.has('teachers.approve') ? (
+          {permissions.has('teachers.approve') && permissions.has('teachers.read') ? (
             <Link
               className="admin-metric-card admin-metric-card--attention"
               to="/admin/teachers/approvals"
@@ -405,7 +430,7 @@ export function AdminRolesPage() {
   return (
     <main className="portal-content product-page">
       <PageHeader
-        description="Role defaults group permissions, but never replace ownership, resource-state, or academic-scope checks."
+        description="Manage the permissions included in each staff role."
         eyebrow="Users and access"
         title="Roles"
       />

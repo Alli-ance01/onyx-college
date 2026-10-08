@@ -35,7 +35,7 @@ export function AdminAssignmentsPage() {
   return (
     <main className="portal-content product-page">
       <PageHeader
-        description="School-wide oversight of assignments created within authorized teaching scopes."
+        description="Browse class assignments and keep track of teaching activity across the school."
         eyebrow="Academic operations"
         title="Assignments"
       />

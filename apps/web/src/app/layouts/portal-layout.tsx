@@ -4,352 +4,25 @@ import { Link, NavLink, Outlet, useLocation } from 'react-router';
 import { useAuthSession } from '../../lib/auth/use-auth-session.js';
 import { SignOutButton } from '../../features/auth/sign-out-button.js';
 
-type PortalName = 'Admin Portal' | 'Student Portal' | 'Teacher Portal';
+import { Brand } from '../../shared/ui/brand.js';
+import { Icon, type IconName } from '../../shared/ui/icon.js';
+
+import { navigationFor, type PortalName } from './portal-navigation.js';
 
 interface PortalLayoutProps {
   portalName: PortalName;
 }
 
-interface NavigationItem {
-  label: string;
-  permissions?: readonly string[];
-  shortLabel: string;
-  to: string;
-}
-
-interface NavigationGroup {
-  label: string;
-  items: readonly NavigationItem[];
-}
-
-const studentNavigation: readonly NavigationGroup[] = [
-  {
-    label: 'Student portal',
-    items: [
-      { label: 'Dashboard', shortLabel: 'D', to: '/student/dashboard' },
-      { label: 'Assignments', shortLabel: 'A', to: '/student/assignments' },
-      { label: 'Announcements', shortLabel: 'N', to: '/student/announcements' },
-      { label: 'Results', shortLabel: 'R', to: '/student/results' },
-      { label: 'Subjects', shortLabel: 'S', to: '/student/subjects' },
-      { label: 'Academic history', shortLabel: 'H', to: '/student/academic-history' },
-      { label: 'Documents', shortLabel: 'F', to: '/student/documents' },
-    ],
-  },
-  {
-    label: 'Account',
-    items: [
-      { label: 'Profile', shortLabel: 'P', to: '/student/profile' },
-      { label: 'Notifications', shortLabel: 'N', to: '/student/notifications' },
-      { label: 'Settings', shortLabel: 'S', to: '/student/settings' },
-    ],
-  },
-];
-
-const teacherNavigation: readonly NavigationGroup[] = [
-  {
-    label: 'Teaching',
-    items: [
-      { label: 'Dashboard', shortLabel: 'D', to: '/teacher' },
-      {
-        label: 'My classes',
-        permissions: ['students.read', 'enrollments.read'],
-        shortLabel: 'C',
-        to: '/teacher/classes',
-      },
-      {
-        label: 'My subjects',
-        permissions: ['students.read', 'enrollments.read'],
-        shortLabel: 'S',
-        to: '/teacher/subjects',
-      },
-      {
-        label: 'Students',
-        permissions: ['students.read'],
-        shortLabel: 'ST',
-        to: '/teacher/students',
-      },
-      {
-        label: 'Assignments',
-        permissions: ['assignments.create', 'assignments.update', 'assignments.publish'],
-        shortLabel: 'A',
-        to: '/teacher/assignments',
-      },
-      {
-        label: 'Results',
-        permissions: ['results.enter', 'results.submit', 'results.request_correction'],
-        shortLabel: 'R',
-        to: '/teacher/results',
-      },
-      {
-        label: 'Announcements',
-        permissions: ['announcements.create_scoped', 'announcements.update_own'],
-        shortLabel: 'N',
-        to: '/teacher/announcements',
-      },
-    ],
-  },
-  {
-    label: 'Account',
-    items: [
-      { label: 'Notifications', shortLabel: 'N', to: '/teacher/notifications' },
-      { label: 'Profile', shortLabel: 'P', to: '/teacher/profile' },
-      { label: 'Settings', shortLabel: 'S', to: '/teacher/settings' },
-    ],
-  },
-];
-
-const adminNavigation: readonly NavigationGroup[] = [
-  {
-    label: 'Overview',
-    items: [{ label: 'Dashboard', shortLabel: 'D', to: '/admin' }],
-  },
-  {
-    label: 'Students',
-    items: [
-      {
-        label: 'All students',
-        permissions: ['students.read'],
-        shortLabel: 'ST',
-        to: '/admin/students',
-      },
-      {
-        label: 'Registration review',
-        permissions: ['students.approve_registration'],
-        shortLabel: 'RR',
-        to: '/admin/students/registrations',
-      },
-      {
-        label: 'Profiles',
-        permissions: ['students.read'],
-        shortLabel: 'P',
-        to: '/admin/students/profiles',
-      },
-      {
-        label: 'Academic history',
-        permissions: ['enrollments.read'],
-        shortLabel: 'H',
-        to: '/admin/students/academic-history',
-      },
-      {
-        label: 'Graduated',
-        permissions: ['students.read'],
-        shortLabel: 'G',
-        to: '/admin/students/graduated',
-      },
-      {
-        label: 'Archived',
-        permissions: ['students.read'],
-        shortLabel: 'AR',
-        to: '/admin/students/archived',
-      },
-      {
-        label: 'Correction requests',
-        permissions: ['students.manage_corrections'],
-        shortLabel: 'CR',
-        to: '/admin/students/corrections',
-      },
-    ],
-  },
-  {
-    label: 'Teachers',
-    items: [
-      {
-        label: 'All teachers',
-        permissions: ['teachers.read'],
-        shortLabel: 'T',
-        to: '/admin/teachers',
-      },
-      {
-        label: 'Pending approvals',
-        permissions: ['teachers.approve'],
-        shortLabel: 'PA',
-        to: '/admin/teachers/approvals',
-      },
-      {
-        label: 'Invitations',
-        permissions: ['teachers.invite', 'teachers.create'],
-        shortLabel: 'I',
-        to: '/admin/teachers/invitations',
-      },
-      {
-        label: 'Profiles',
-        permissions: ['teachers.read'],
-        shortLabel: 'P',
-        to: '/admin/teachers/profiles',
-      },
-      {
-        label: 'Teaching assignments',
-        permissions: ['teachers.assign'],
-        shortLabel: 'TA',
-        to: '/admin/teachers/assignments',
-      },
-    ],
-  },
-  {
-    label: 'Academic structure',
-    items: [
-      {
-        label: 'Sessions',
-        permissions: ['sessions.manage'],
-        shortLabel: 'SE',
-        to: '/admin/academics/sessions',
-      },
-      {
-        label: 'Terms',
-        permissions: ['terms.manage'],
-        shortLabel: 'TM',
-        to: '/admin/academics/terms',
-      },
-      {
-        label: 'Classes',
-        permissions: ['classes.manage'],
-        shortLabel: 'CL',
-        to: '/admin/academics/classes',
-      },
-      {
-        label: 'Senior tracks',
-        permissions: ['tracks.manage'],
-        shortLabel: 'TR',
-        to: '/admin/academics/tracks',
-      },
-      {
-        label: 'Subjects',
-        permissions: ['subjects.manage'],
-        shortLabel: 'SU',
-        to: '/admin/academics/subjects',
-      },
-      {
-        label: 'Subject offerings',
-        permissions: ['subject_offerings.manage'],
-        shortLabel: 'SO',
-        to: '/admin/academics/subject-offerings',
-      },
-      {
-        label: 'Promotions',
-        permissions: ['enrollments.promote'],
-        shortLabel: 'PR',
-        to: '/admin/academics/promotions',
-      },
-    ],
-  },
-  {
-    label: 'Academic operations',
-    items: [
-      {
-        label: 'Assignments',
-        permissions: ['assignments.manage_all'],
-        shortLabel: 'A',
-        to: '/admin/assignments',
-      },
-      {
-        label: 'Announcements',
-        permissions: ['announcements.create_schoolwide', 'announcements.manage_all'],
-        shortLabel: 'N',
-        to: '/admin/announcements',
-      },
-      {
-        label: 'Result overview',
-        permissions: ['results.read_all', 'results.review', 'results.approve', 'results.publish'],
-        shortLabel: 'R',
-        to: '/admin/results',
-      },
-    ],
-  },
-  {
-    label: 'Results',
-    items: [
-      {
-        label: 'Assessment configuration',
-        permissions: ['results.configure'],
-        shortLabel: 'AC',
-        to: '/admin/results/assessment-schemes',
-      },
-      {
-        label: 'Grading configuration',
-        permissions: ['results.configure'],
-        shortLabel: 'GC',
-        to: '/admin/results/grading-schemes',
-      },
-      {
-        label: 'Submitted results',
-        permissions: ['results.read_all', 'results.review'],
-        shortLabel: 'SR',
-        to: '/admin/results/submitted',
-      },
-      {
-        label: 'Review',
-        permissions: ['results.review'],
-        shortLabel: 'RV',
-        to: '/admin/results/review',
-      },
-      {
-        label: 'Approval',
-        permissions: ['results.approve'],
-        shortLabel: 'AP',
-        to: '/admin/results/approval',
-      },
-      {
-        label: 'Publishing',
-        permissions: ['results.publish'],
-        shortLabel: 'PB',
-        to: '/admin/results/publishing',
-      },
-      {
-        label: 'Corrections',
-        permissions: ['results.approve_correction', 'results.read_all'],
-        shortLabel: 'CR',
-        to: '/admin/results/corrections',
-      },
-    ],
-  },
-  {
-    label: 'Administration',
-    items: [
-      {
-        label: 'Administrators',
-        permissions: ['admins.create', 'admins.manage'],
-        shortLabel: 'AD',
-        to: '/admin/access/administrators',
-      },
-      {
-        label: 'Roles',
-        permissions: ['roles.manage'],
-        shortLabel: 'RO',
-        to: '/admin/access/roles',
-      },
-      {
-        label: 'Permissions',
-        permissions: ['permissions.manage'],
-        shortLabel: 'PE',
-        to: '/admin/access/permissions',
-      },
-      {
-        label: 'Documents',
-        permissions: ['documents.read', 'documents.review', 'documents.configure'],
-        shortLabel: 'F',
-        to: '/admin/documents',
-      },
-      {
-        label: 'Audit logs',
-        permissions: ['audit.read'],
-        shortLabel: 'AU',
-        to: '/admin/audit',
-      },
-      { label: 'Notifications', shortLabel: 'N', to: '/admin/notifications' },
-      {
-        label: 'School settings',
-        permissions: ['settings.manage'],
-        shortLabel: 'S',
-        to: '/admin/settings',
-      },
-    ],
-  },
-];
-
-function navigationFor(portalName: PortalName): readonly NavigationGroup[] {
-  if (portalName === 'Student Portal') return studentNavigation;
-  if (portalName === 'Teacher Portal') return teacherNavigation;
-  return adminNavigation;
+function navigationIcon(path: string): IconName {
+  if (path === '/admin' || path === '/teacher' || path.includes('dashboard')) return 'home';
+  if (/notification|announcement/.test(path)) return 'bell';
+  if (/result|grading|assessment/.test(path)) return 'chart';
+  if (/\/(students|teachers|administrators)(\/|$)|profile/.test(path)) return 'people';
+  if (/session|term|calendar/.test(path)) return 'calendar';
+  if (/subject|class|academic/.test(path)) return 'book';
+  if (/role|permission|audit/.test(path)) return 'shield';
+  if (path.includes('setting')) return 'settings';
+  return 'document';
 }
 
 function initials(displayName: string | undefined): string {
@@ -367,6 +40,7 @@ export function PortalLayout({ portalName }: PortalLayoutProps) {
   const auth = useAuthSession();
   const location = useLocation();
   const [navigationOpen, setNavigationOpen] = useState(false);
+  const [pageSearch, setPageSearch] = useState('');
   const sidebar = useRef<HTMLElement>(null);
   const permittedNavigation = useMemo(() => {
     const effectivePermissions = new Set(auth.principal?.permissions ?? []);
@@ -383,10 +57,48 @@ export function PortalLayout({ portalName }: PortalLayoutProps) {
       .filter((group) => group.items.length > 0);
   }, [auth.principal?.permissions, portalName]);
 
+  const contextualLabels = new Set([
+    'Graduated',
+    'Archived',
+    'Senior tracks',
+    'Subject offerings',
+    'Terms',
+    'Assessment configuration',
+    'Grading configuration',
+    'Submitted results',
+    'Review',
+    'Approval',
+    'Publishing',
+    'Corrections',
+  ]);
+  const visibleNavigation = permittedNavigation
+    .map((group) => ({
+      ...group,
+      items: group.items.filter(
+        (item) =>
+          (pageSearch.trim() !== '' || !contextualLabels.has(item.label)) &&
+          `${group.label} ${item.label}`.toLowerCase().includes(pageSearch.trim().toLowerCase()),
+      ),
+    }))
+    .filter((group) => group.items.length > 0);
+
   const currentItem = permittedNavigation
     .flatMap((group) => group.items)
-    .filter((item) => location.pathname === item.to || location.pathname.startsWith(`${item.to}/`))
+    .filter(
+      (item) =>
+        location.pathname === item.to ||
+        (!['/admin', '/teacher'].includes(item.to) && location.pathname.startsWith(`${item.to}/`)),
+    )
     .sort((left, right) => right.to.length - left.to.length)[0];
+
+  const relatedGroup = location.pathname.startsWith('/admin/results')
+    ? permittedNavigation.find((group) => group.label === 'Results')
+    : permittedNavigation.find((group) => group.items.some((item) => item.to === currentItem?.to));
+  const relatedItems = relatedGroup?.items.filter((item) => contextualLabels.has(item.label)) ?? [];
+
+  useEffect(() => {
+    document.title = `${currentItem?.label ?? 'Page not found'} · ${portalName} · Onyx College`;
+  }, [currentItem?.label, portalName]);
 
   useEffect(() => {
     if (typeof window.matchMedia !== 'function') return undefined;
@@ -412,7 +124,7 @@ export function PortalLayout({ portalName }: PortalLayoutProps) {
       if (event.key === 'Escape') setNavigationOpen(false);
       if (event.key === 'Tab') {
         const focusable = sidebar.current?.querySelectorAll<HTMLElement>(
-          'a[href], button:not([disabled])',
+          'a[href], button:not([disabled]), input:not([disabled])',
         );
         const first = focusable?.[0];
         const last = focusable?.[focusable.length - 1];
@@ -436,6 +148,9 @@ export function PortalLayout({ portalName }: PortalLayoutProps) {
 
   return (
     <div className={`portal-shell${navigationOpen ? ' portal-shell--nav-open' : ''}`}>
+      <a className="skip-link" href="#main-content">
+        Skip to content
+      </a>
       <button
         aria-label="Close navigation"
         className="portal-navigation-backdrop"
@@ -455,15 +170,7 @@ export function PortalLayout({ portalName }: PortalLayoutProps) {
         id="portal-navigation"
       >
         <div className="portal-sidebar__brand">
-          <Link className="brand brand--inverse" to="/" aria-label="Onyx College Portal home">
-            <span className="brand__mark" aria-hidden="true">
-              O
-            </span>
-            <span>
-              <strong>Onyx College</strong>
-              <small>{portalName}</small>
-            </span>
-          </Link>
+          <Brand subtitle={portalName} />
           <button
             aria-label="Close navigation"
             className="portal-sidebar__close"
@@ -476,30 +183,47 @@ export function PortalLayout({ portalName }: PortalLayoutProps) {
           </button>
         </div>
 
+        <label className="navigation-search">
+          <Icon name="search" />
+          <input
+            aria-label="Find a page"
+            placeholder="Find a page…"
+            value={pageSearch}
+            onChange={(event) => {
+              setPageSearch(event.target.value);
+            }}
+          />
+        </label>
         <nav aria-label={`${portalName} navigation`} className="portal-navigation">
-          {permittedNavigation.map((group) => (
+          {visibleNavigation.map((group) => (
             <div className="portal-nav-group" key={group.label}>
               <span className="portal-nav-section">{group.label}</span>
               {group.items.map((item) => (
                 <NavLink
-                  className={() =>
-                    `portal-nav-item${currentItem?.to === item.to ? ' portal-nav-item--active' : ''}`
+                  className={({ isPending }) =>
+                    `portal-nav-item${currentItem?.to === item.to ? ' portal-nav-item--active' : ''}${isPending ? ' portal-nav-item--pending' : ''}`
                   }
                   end
                   key={item.to}
                   onClick={() => {
                     setNavigationOpen(false);
+                    setPageSearch('');
                   }}
                   to={item.to}
                 >
                   <span aria-hidden="true" className="portal-nav-item__icon">
-                    {item.shortLabel}
+                    <Icon name={navigationIcon(item.to)} />
                   </span>
                   <span>{item.label}</span>
                 </NavLink>
               ))}
             </div>
           ))}
+          {visibleNavigation.length === 0 ? (
+            <p className="navigation-search__empty" role="status">
+              No pages found. Try a different name.
+            </p>
+          ) : null}
         </nav>
 
         <div className="portal-sidebar__account">
@@ -548,7 +272,16 @@ export function PortalLayout({ portalName }: PortalLayoutProps) {
             <SignOutButton />
           </div>
         </header>
-        <div className="portal-view" id="main-content">
+        <div className="portal-view" id="main-content" tabIndex={-1}>
+          {relatedItems.length > 0 ? (
+            <nav className="context-navigation" aria-label="Related pages">
+              {relatedItems.map((item) => (
+                <NavLink key={item.to} to={item.to} end>
+                  {item.label}
+                </NavLink>
+              ))}
+            </nav>
+          ) : null}
           <Outlet />
         </div>
       </div>

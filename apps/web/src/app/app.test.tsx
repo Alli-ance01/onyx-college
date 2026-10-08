@@ -15,9 +15,7 @@ describe('application foundation', () => {
       </AppProviders>,
     );
 
-    expect(
-      await screen.findByRole('heading', { name: 'One secure portal for your school community' }),
-    ).toBeVisible();
+    expect(await screen.findByRole('heading', { name: 'We trust in excellence.' })).toBeVisible();
     expect(screen.getByRole('navigation', { name: 'Public navigation' })).toBeVisible();
     expect(screen.getByRole('link', { name: 'Sign in to the portal' })).toBeVisible();
   });

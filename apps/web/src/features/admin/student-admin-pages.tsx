@@ -607,14 +607,31 @@ export function AdminStudentDirectoryPage() {
     : pathname.endsWith('/archived')
       ? 'ARCHIVED'
       : undefined;
-  const [q, setQ] = useState('');
-  const [sessionId, setSessionId] = useState('');
-  const [classLevelId, setClassLevelId] = useState('');
-  const [trackId, setTrackId] = useState('');
-  const [gender, setGender] = useState('');
-  const [selectedStatus, setStatus] = useState('');
+  const [filters, setFilters] = useSearchParams();
+  const q = filters.get('q') ?? '';
+  const sessionId = filters.get('session') ?? '';
+  const classLevelId = filters.get('class') ?? '';
+  const trackId = filters.get('track') ?? '';
+  const gender = filters.get('gender') ?? '';
+  const selectedStatus = filters.get('status') ?? '';
   const status = fixedStatus ?? selectedStatus;
-  const [cursor, setCursor] = useState('');
+  const cursor = filters.get('cursor') ?? '';
+  const activeFilterCount = [sessionId, classLevelId, trackId, gender, selectedStatus].filter(
+    Boolean,
+  ).length;
+  const [filtersOpen, setFiltersOpen] = useState(activeFilterCount > 0);
+  const updateFilter = (key: string, value: string) => {
+    setFilters(
+      (previous) => {
+        const next = new URLSearchParams(previous);
+        if (key !== 'cursor') next.delete('cursor');
+        if (value === '') next.delete(key);
+        else next.set(key, value);
+        return next;
+      },
+      { replace: key === 'q' },
+    );
+  };
   const academic = useQuery({
     queryKey: ['academic-setup'],
     queryFn: async () =>
@@ -637,9 +654,6 @@ export function AdminStudentDirectoryPage() {
     },
   });
   const students = query.data?.data ?? [];
-  const resetCursor = () => {
-    setCursor('');
-  };
   return (
     <main className="portal-content product-page">
       <header className="page-heading">
@@ -655,99 +669,117 @@ export function AdminStudentDirectoryPage() {
           <p>Find student records, view profiles, and review academic placements.</p>
         </div>
       </header>
-      <div className="toolbar surface">
+      <div className="directory-toolbar surface">
         <label className="search-field">
           Search
           <input
             value={q}
             onChange={(event) => {
-              setQ(event.target.value);
-              resetCursor();
+              updateFilter('q', event.target.value);
             }}
             placeholder="Name or Student ID"
           />
         </label>
-        <label>
-          Academic session
-          <select
-            value={sessionId}
-            onChange={(event) => {
-              setSessionId(event.target.value);
-              resetCursor();
+        <button
+          className="secondary-button"
+          type="button"
+          aria-expanded={filtersOpen}
+          aria-controls="directory-filters"
+          onClick={() => {
+            setFiltersOpen(!filtersOpen);
+          }}
+        >
+          Filters{activeFilterCount > 0 ? ` (${String(activeFilterCount)})` : ''}
+        </button>
+        {q !== '' || activeFilterCount > 0 ? (
+          <button
+            className="text-button"
+            type="button"
+            onClick={() => {
+              setFilters({});
             }}
           >
-            <option value="">All available</option>
-            {academic.data?.activeSession === undefined ? null : (
-              <option value={academic.data.activeSession.id}>
-                {academic.data.activeSession.label}
-              </option>
-            )}
-          </select>
-        </label>
-        <label>
-          Class
-          <select
-            value={classLevelId}
-            onChange={(event) => {
-              setClassLevelId(event.target.value);
-              resetCursor();
-            }}
-          >
-            <option value="">All classes</option>
-            {academic.data?.classLevels.map((level) => (
-              <option key={level.id} value={level.id}>
-                {level.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Track
-          <select
-            value={trackId}
-            onChange={(event) => {
-              setTrackId(event.target.value);
-              resetCursor();
-            }}
-          >
-            <option value="">All tracks</option>
-            {academic.data?.tracks.map((track) => (
-              <option key={track.id} value={track.id}>
-                {track.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Gender
-          <select
-            value={gender}
-            onChange={(event) => {
-              setGender(event.target.value);
-              resetCursor();
-            }}
-          >
-            <option value="">All</option>
-            <option value="Female">Female</option>
-            <option value="Male">Male</option>
-          </select>
-        </label>
-        <label>
-          Status
-          <select
-            value={status}
-            disabled={fixedStatus !== undefined}
-            onChange={(event) => {
-              setStatus(event.target.value);
-              resetCursor();
-            }}
-          >
-            <option value="">All</option>
-            {['ACTIVE', 'WITHDRAWN', 'TRANSFERRED', 'GRADUATED', 'ARCHIVED'].map((item) => (
-              <option key={item}>{item}</option>
-            ))}
-          </select>
-        </label>
+            Clear filters
+          </button>
+        ) : null}
+        <div className="directory-filters" id="directory-filters" hidden={!filtersOpen}>
+          <label>
+            Academic session
+            <select
+              value={sessionId}
+              onChange={(event) => {
+                updateFilter('session', event.target.value);
+              }}
+            >
+              <option value="">All available</option>
+              {academic.data?.activeSession === undefined ? null : (
+                <option value={academic.data.activeSession.id}>
+                  {academic.data.activeSession.label}
+                </option>
+              )}
+            </select>
+          </label>
+          <label>
+            Class
+            <select
+              value={classLevelId}
+              onChange={(event) => {
+                updateFilter('class', event.target.value);
+              }}
+            >
+              <option value="">All classes</option>
+              {academic.data?.classLevels.map((level) => (
+                <option key={level.id} value={level.id}>
+                  {level.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Track
+            <select
+              value={trackId}
+              onChange={(event) => {
+                updateFilter('track', event.target.value);
+              }}
+            >
+              <option value="">All tracks</option>
+              {academic.data?.tracks.map((track) => (
+                <option key={track.id} value={track.id}>
+                  {track.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Gender
+            <select
+              value={gender}
+              onChange={(event) => {
+                updateFilter('gender', event.target.value);
+              }}
+            >
+              <option value="">All</option>
+              <option value="Female">Female</option>
+              <option value="Male">Male</option>
+            </select>
+          </label>
+          <label>
+            Status
+            <select
+              value={status}
+              disabled={fixedStatus !== undefined}
+              onChange={(event) => {
+                updateFilter('status', event.target.value);
+              }}
+            >
+              <option value="">All</option>
+              {['ACTIVE', 'WITHDRAWN', 'TRANSFERRED', 'GRADUATED', 'ARCHIVED'].map((item) => (
+                <option key={item}>{item}</option>
+              ))}
+            </select>
+          </label>
+        </div>
       </div>
       {query.isError ? (
         <ErrorState title="Student directory unavailable" onRetry={() => void query.refetch()} />
@@ -784,7 +816,7 @@ export function AdminStudentDirectoryPage() {
             <button
               className="secondary-button"
               onClick={() => {
-                setCursor('');
+                updateFilter('cursor', '');
               }}
             >
               First page
@@ -794,7 +826,7 @@ export function AdminStudentDirectoryPage() {
             <button
               className="secondary-button"
               onClick={() => {
-                setCursor(query.data?.meta?.nextCursor ?? '');
+                updateFilter('cursor', query.data?.meta?.nextCursor ?? '');
               }}
             >
               Next page

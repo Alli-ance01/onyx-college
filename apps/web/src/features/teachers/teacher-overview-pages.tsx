@@ -60,10 +60,17 @@ export function TeacherDashboardPage() {
     queryKey: teacherQueryKeys.announcements,
   });
 
-  if (profile.isPending) return <LoadingState label="Loading teacher dashboard" rows={5} />;
+  if (profile.isPending)
+    return (
+      <main className="portal-content">
+        <LoadingState label="Loading teacher dashboard" rows={5} />
+      </main>
+    );
   if (profile.isError)
     return (
-      <ErrorState onRetry={() => void profile.refetch()} title="Teacher profile unavailable" />
+      <main className="portal-content">
+        <ErrorState onRetry={() => void profile.refetch()} title="Teacher profile unavailable" />
+      </main>
     );
   if (profile.data.teacher.status !== 'ACTIVE') {
     return (
@@ -74,7 +81,11 @@ export function TeacherDashboardPage() {
     );
   }
   if (assignments.isPending || work.isPending || notices.isPending) {
-    return <LoadingState label="Loading teacher dashboard" rows={5} />;
+    return (
+      <main className="portal-content">
+        <LoadingState label="Loading teacher dashboard" rows={5} />
+      </main>
+    );
   }
   if (assignments.isError || work.isError || notices.isError) {
     return (
@@ -94,9 +105,9 @@ export function TeacherDashboardPage() {
     .size;
 
   return (
-    <main className="portal-content product-page">
+    <main className="portal-content product-page teacher-dashboard">
       <PageHeader
-        description="Your current academic scope and the work that needs attention."
+        description="Your classes, teaching plans, and next steps for the term."
         eyebrow="Teacher Portal"
         title={`Welcome, ${profile.data.teacher.firstName}`}
       />
@@ -121,12 +132,12 @@ export function TeacherDashboardPage() {
       <div className="content-grid content-grid--two">
         <Panel
           title="Academic assignments"
-          description="Only these assignments confer academic authority."
+          description="The classes and subjects you are teaching this session."
         >
           {active.length === 0 ? (
             <EmptyState
               title="No active assignment"
-              description="An administrator has not assigned an academic scope yet."
+              description="Your classes will appear here once the school assigns them to you."
             />
           ) : (
             <ul className="record-list">
@@ -140,7 +151,7 @@ export function TeacherDashboardPage() {
               ))}
             </ul>
           )}
-          <Link to="/teacher/classes">View academic scope</Link>
+          <Link to="/teacher/classes">View my classes</Link>
         </Panel>
         <Panel title="Quick actions">
           <div className="action-list">
@@ -170,7 +181,7 @@ function AssignmentScopePage({ mode }: { mode: 'classes' | 'subjects' }) {
   return (
     <main className="portal-content product-page">
       <PageHeader
-        description="This scope is assigned by an administrator and enforced by the server."
+        description="Your classes and subjects for the current school session."
         eyebrow="Academic authority"
         title={mode === 'classes' ? 'My classes' : 'My subjects'}
       />
@@ -263,7 +274,9 @@ export function TeacherProfilePage() {
   if (profile.isPending) return <LoadingState rows={4} />;
   if (profile.isError)
     return (
-      <ErrorState onRetry={() => void profile.refetch()} title="Teacher profile unavailable" />
+      <main className="portal-content">
+        <ErrorState onRetry={() => void profile.refetch()} title="Teacher profile unavailable" />
+      </main>
     );
   const { teacher, registration } = profile.data;
   return (

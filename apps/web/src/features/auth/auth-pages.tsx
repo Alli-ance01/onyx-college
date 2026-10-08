@@ -1,3 +1,4 @@
+import { SchoolCrest } from '../../shared/ui/brand.js';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -65,9 +66,7 @@ function AuthAside({
 }) {
   return (
     <aside className="auth-aside" aria-label="Onyx College guidance">
-      <div className="auth-aside__mark" aria-hidden="true">
-        O
-      </div>
+      <SchoolCrest className="school-crest--auth" />
       <p className="eyebrow">{eyebrow}</p>
       <h2>{title}</h2>
       <p className="auth-aside__description">{description}</p>
@@ -79,7 +78,7 @@ function AuthAside({
           </li>
         ))}
       </ol>
-      <p className="auth-aside__footer">Private by design · Ready when you are</p>
+      <p className="auth-aside__footer">Onyx College · We trust in excellence</p>
     </aside>
   );
 }
@@ -178,7 +177,7 @@ export function LoginPage() {
       />
       <section className="auth-card surface" aria-labelledby="login-heading">
         <div className="auth-card__topline">
-          <span>O</span>
+          <span>Onyx College</span>
           <span>Secure access</span>
         </div>
         <p className="eyebrow">Welcome back</p>

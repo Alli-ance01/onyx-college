@@ -1,18 +1,30 @@
-import { NavLink, Outlet } from 'react-router';
+import { useEffect } from 'react';
+import { Brand } from '../../shared/ui/brand.js';
+import { NavLink, Outlet, useLocation } from 'react-router';
 
 export function PublicLayout() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    const title =
+      pathname === '/'
+        ? 'We trust in excellence'
+        : pathname === '/auth/login'
+          ? 'Sign in'
+          : pathname === '/student-signup'
+            ? 'Student application'
+            : pathname === '/auth/change-password'
+              ? 'Account security'
+              : pathname.startsWith('/onboarding')
+                ? 'Your application'
+                : pathname === '/teacher-setup'
+                  ? 'Teacher account setup'
+                  : 'Page not found';
+    document.title = `${title} · Onyx College`;
+  }, [pathname]);
   return (
     <div className="public-shell">
       <header className="public-header">
-        <NavLink className="brand" to="/" aria-label="Onyx College Portal home">
-          <span className="brand__mark" aria-hidden="true">
-            O
-          </span>
-          <span>
-            <strong>Onyx College</strong>
-            <small>School information portal</small>
-          </span>
-        </NavLink>
+        <Brand />
         <nav aria-label="Public navigation" className="public-nav">
           <NavLink end to="/">
             Home
@@ -25,13 +37,8 @@ export function PublicLayout() {
       </header>
       <Outlet />
       <footer className="public-footer">
-        <div>
-          <span className="brand__mark" aria-hidden="true">
-            O
-          </span>
-          <strong>Onyx College</strong>
-        </div>
-        <p>School information portal</p>
+        <Brand />
+        <p>School life, connected.</p>
         <small>© {new Date().getFullYear()} Onyx College</small>
       </footer>
     </div>
