@@ -1,3 +1,4 @@
+import { IntakeQueue } from './intake-queue.js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type SyntheticEvent } from 'react';
 import { Link } from 'react-router';
@@ -135,6 +136,7 @@ export function AdminDashboardPage() {
           ) : null}
         </div>
       </section>
+      <IntakeQueue />
       <section className="admin-dashboard-grid" aria-label="Administrative work queues">
         <Panel
           className="admin-queue-panel"

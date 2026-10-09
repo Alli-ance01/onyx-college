@@ -1373,7 +1373,7 @@ td small {
   box-shadow: var(--shadow-subtle);
 }
 
-.result-entry-card > header {
+.result-entry-card header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1382,12 +1382,12 @@ td small {
   border-bottom: 1px solid var(--color-neutral-200);
 }
 
-.result-entry-card > header > div {
+.result-entry-card header > div {
   display: grid;
   gap: var(--space-1);
 }
 
-.result-entry-card > header small {
+.result-entry-card header small {
   color: var(--color-neutral-500);
 }
 
@@ -1470,7 +1470,7 @@ td small {
 
   .inline-form,
   .term-row,
-  .result-entry-card > header {
+  .result-entry-card header {
     align-items: stretch;
     flex-direction: column;
   }

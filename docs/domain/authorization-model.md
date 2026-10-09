@@ -136,3 +136,7 @@ Responses must not reveal whether an inaccessible sensitive record exists. Produ
 
 Tests must cover permission allow/deny behavior, student ownership, rejected-registration reopening, teacher scope across subject/class/track/session, junior no-track rules, single-active-class-teacher enforcement, inactive/revoked assignments, returned-result editing, result approval separation of duties, correction-request separation of duties, unpublished result isolation, published-result protection, medical/document restrictions, role/permission revocation, bootstrap duplicate refusal, and attempts to substitute client-controlled identifiers.
 Tests must also cover default role grants, student ownership without an administrative bundle, protected `SUPER_ADMIN` mutation denial, duplicate-review authorization, exactly one active session, at-most-one active term, and School Settings/current-state consistency.
+
+## Timetable extension
+
+`timetable.manage` authorizes term schedule publication. It is included in the standard school administrator catalogue; custom roles remain explicit. Student and teacher reads use server-side enrollment/curriculum and active teaching assignments. Timetable membership never grants academic authority. See [timetable invariants](timetable.md).

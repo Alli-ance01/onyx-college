@@ -24,6 +24,7 @@
     "format:check": "prettier --check ."
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.11.1",
     "@eslint/js": "catalog:",
     "@playwright/test": "1.63.0",
     "concurrently": "catalog:",

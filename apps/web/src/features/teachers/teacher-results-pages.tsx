@@ -5,11 +5,12 @@ import type {
   TeachingAssignmentDto,
 } from '@onyx/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState, type SyntheticEvent } from 'react';
+import { useCallback, useState, type SyntheticEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 
 import { ApiClientError } from '../../lib/api/index.js';
 import { useAuthSession } from '../../lib/auth/use-auth-session.js';
+import { useUnsavedChanges } from '../../shared/hooks/use-unsaved-changes.js';
 import { formText } from '../../shared/forms/form-data.js';
 import {
   Button,
@@ -228,7 +229,15 @@ interface EntryDraft {
   exempt: boolean;
 }
 
-function ResultEntryEditor({ batch, entry }: { batch: ResultBatchDto; entry: ResultEntryDto }) {
+function ResultEntryEditor({
+  batch,
+  entry,
+  onDirty,
+}: {
+  batch: ResultBatchDto;
+  entry: ResultEntryDto;
+  onDirty: (id: string, dirty: boolean) => void;
+}) {
   const auth = useAuthSession();
   const cache = useQueryClient();
   const editable = canEdit(batch.status);
@@ -239,8 +248,10 @@ function ResultEntryEditor({ batch, entry }: { batch: ResultBatchDto; entry: Res
   const [correctionReason, setCorrectionReason] = useState('');
   const save = useMutation({
     mutationFn: () => teacherApi.saveResultEntry(auth.apiClient, entry.id, draft),
-    onSuccess: async () =>
-      cache.invalidateQueries({ queryKey: teacherQueryKeys.resultBatch(batch.id) }),
+    onSuccess: async () => {
+      onDirty(entry.id, false);
+      await cache.invalidateQueries({ queryKey: teacherQueryKeys.resultBatch(batch.id) });
+    },
   });
   const correction = useMutation({
     mutationFn: () =>
@@ -250,151 +261,177 @@ function ResultEntryEditor({ batch, entry }: { batch: ResultBatchDto; entry: Res
       }),
     onSuccess: () => {
       setCorrectionReason('');
+      onDirty(entry.id, false);
     },
   });
 
   function setComponent(key: string, update: ResultComponentDto) {
+    onDirty(entry.id, true);
     setDraft((current) => ({
       ...current,
-      components: current.components.map((component) =>
-        component.key === key ? update : component,
-      ),
+      components: current.components.some((component) => component.key === key)
+        ? current.components.map((component) => (component.key === key ? update : component))
+        : [...current.components, update],
     }));
   }
 
   return (
     <article className="result-entry-card">
-      <header>
-        <div>
-          <strong>{entry.student.name}</strong>
-          <small>{entry.student.studentId}</small>
-        </div>
-        {entry.exempt ? (
-          <StatusBadge tone="neutral">EXEMPT</StatusBadge>
-        ) : entry.total === undefined ? null : (
-          <span>
-            {entry.total} / {entry.grade}
-          </span>
-        )}
-      </header>
-      <label className="checkbox-field">
-        <input
-          checked={draft.exempt}
-          disabled={!editable && batch.status !== 'PUBLISHED'}
-          onChange={(event) => {
-            setDraft((current) => ({ ...current, exempt: event.target.checked }));
-          }}
-          type="checkbox"
-        />{' '}
-        Exempt from this subject
-      </label>
-      <div className="result-component-grid">
-        {batch.assessmentScheme.components.map((component) => {
-          const value = draft.components.find((item) => item.key === component.key) ?? {
-            key: component.key,
-            state: 'SCORED' as const,
-            score: '',
-          };
-          return (
-            <div className="result-component" key={component.key}>
-              <label htmlFor={`${entry.id}-${component.key}`}>
-                {component.label} <small>/ {component.maximum}</small>
-              </label>
-              <input
-                disabled={
-                  draft.exempt ||
-                  (!editable && batch.status !== 'PUBLISHED') ||
-                  value.state === 'ABSENT'
-                }
-                id={`${entry.id}-${component.key}`}
-                inputMode="decimal"
-                max={component.maximum}
-                min="0"
-                onChange={(event) => {
-                  setComponent(component.key, {
-                    key: component.key,
-                    score: event.target.value,
-                    state: 'SCORED',
-                  });
-                }}
-                step="0.01"
-                type="number"
-                value={value.score ?? ''}
-              />
-              <label className="checkbox-field">
-                <input
-                  checked={value.state === 'ABSENT'}
-                  disabled={draft.exempt || (!editable && batch.status !== 'PUBLISHED')}
-                  onChange={(event) => {
-                    setComponent(
-                      component.key,
-                      event.target.checked
-                        ? { key: component.key, state: 'ABSENT' }
-                        : { key: component.key, score: '', state: 'SCORED' },
-                    );
-                  }}
-                  type="checkbox"
-                />{' '}
-                Absent
-              </label>
-            </div>
-          );
-        })}
-      </div>
-      {editable ? (
-        <div className="entry-actions">
-          <Button
-            loading={save.isPending}
-            onClick={() => {
-              save.mutate();
-            }}
-            variant="secondary"
-          >
-            Save entry
-          </Button>
-          {errorMessage(save.error) === undefined ? null : (
-            <span className="field-error">{errorMessage(save.error)}</span>
+      <fieldset className="form-fieldset" disabled={save.isPending || correction.isPending}>
+        <header>
+          <div>
+            <strong>{entry.student.name}</strong>
+            <small>{entry.student.studentId}</small>
+          </div>
+          {entry.exempt ? (
+            <StatusBadge tone="neutral">EXEMPT</StatusBadge>
+          ) : entry.total === undefined ? null : (
+            <span>
+              {entry.total} / {entry.grade}
+            </span>
           )}
-        </div>
-      ) : null}
-      {batch.status === 'PUBLISHED' ? (
-        <div className="correction-request-inline">
-          <FormField controlId={`${entry.id}-reason`} label="Published-result correction reason">
-            <textarea
-              onChange={(event) => {
-                setCorrectionReason(event.target.value);
-              }}
-              rows={2}
-              value={correctionReason}
-            />
-          </FormField>
-          <Button
-            disabled={correctionReason.trim().length < 5}
-            loading={correction.isPending}
-            onClick={() => {
-              correction.mutate();
+        </header>
+        <label className="checkbox-field">
+          <input
+            checked={draft.exempt}
+            disabled={!editable && batch.status !== 'PUBLISHED'}
+            onChange={(event) => {
+              onDirty(entry.id, true);
+              setDraft((current) => ({ ...current, exempt: event.target.checked }));
             }}
-            variant="secondary"
-          >
-            Request correction
-          </Button>
-          {correction.isSuccess ? (
-            <span className="success-copy">Correction request submitted.</span>
-          ) : null}
+            type="checkbox"
+          />{' '}
+          Exempt from this subject
+        </label>
+        <div className="result-component-grid">
+          {batch.assessmentScheme.components.map((component) => {
+            const value = draft.components.find((item) => item.key === component.key) ?? {
+              key: component.key,
+              state: 'SCORED' as const,
+              score: '',
+            };
+            return (
+              <div className="result-component" key={component.key}>
+                <label htmlFor={`${entry.id}-${component.key}`}>
+                  {component.label} <small>/ {component.maximum}</small>
+                </label>
+                <input
+                  disabled={
+                    draft.exempt ||
+                    (!editable && batch.status !== 'PUBLISHED') ||
+                    value.state === 'ABSENT'
+                  }
+                  id={`${entry.id}-${component.key}`}
+                  inputMode="decimal"
+                  max={component.maximum}
+                  min="0"
+                  onChange={(event) => {
+                    setComponent(component.key, {
+                      key: component.key,
+                      score: event.target.value,
+                      state: 'SCORED',
+                    });
+                  }}
+                  step="0.01"
+                  type="number"
+                  value={value.score ?? ''}
+                />
+                <label className="checkbox-field">
+                  <input
+                    checked={value.state === 'ABSENT'}
+                    disabled={draft.exempt || (!editable && batch.status !== 'PUBLISHED')}
+                    onChange={(event) => {
+                      setComponent(
+                        component.key,
+                        event.target.checked
+                          ? { key: component.key, state: 'ABSENT' }
+                          : { key: component.key, score: '', state: 'SCORED' },
+                      );
+                    }}
+                    type="checkbox"
+                  />{' '}
+                  Absent
+                </label>
+              </div>
+            );
+          })}
         </div>
-      ) : null}
+        {editable ? (
+          <div className="entry-actions">
+            <Button
+              loading={save.isPending}
+              onClick={() => {
+                save.mutate();
+              }}
+              variant="secondary"
+            >
+              Save entry
+            </Button>
+            {save.isSuccess ? (
+              <span role="status" className="success-copy">
+                Entry saved.
+              </span>
+            ) : null}
+            {errorMessage(save.error) === undefined ? null : (
+              <span className="field-error">{errorMessage(save.error)}</span>
+            )}
+          </div>
+        ) : null}
+        {batch.status === 'PUBLISHED' ? (
+          <div className="correction-request-inline">
+            <FormField controlId={`${entry.id}-reason`} label="Published-result correction reason">
+              <textarea
+                onChange={(event) => {
+                  onDirty(entry.id, true);
+                  setCorrectionReason(event.target.value);
+                }}
+                rows={2}
+                value={correctionReason}
+              />
+            </FormField>
+            <Button
+              disabled={correctionReason.trim().length < 5}
+              loading={correction.isPending}
+              onClick={() => {
+                correction.mutate();
+              }}
+              variant="secondary"
+            >
+              Request correction
+            </Button>
+            {correction.isSuccess ? (
+              <span className="success-copy">Correction request submitted.</span>
+            ) : null}
+          </div>
+        ) : null}
+        {correction.isError ? (
+          <p role="alert" className="field-error">
+            {errorMessage(correction.error)}
+          </p>
+        ) : null}
+      </fieldset>
     </article>
   );
 }
 
 export function TeacherResultBatchPage() {
   const { batchId = '' } = useParams();
+  const [dirtyEntries, setDirtyEntries] = useState<ReadonlySet<string>>(new Set());
+  const onDirty = useCallback((id: string, dirty: boolean) => {
+    setDirtyEntries((current) => {
+      const next = new Set(current);
+      if (dirty) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }, []);
+  useUnsavedChanges(dirtyEntries.size > 0);
   const auth = useAuthSession();
   const cache = useQueryClient();
   const query = useQuery({
     queryFn: () => teacherApi.resultBatch(auth.apiClient, batchId),
     queryKey: teacherQueryKeys.resultBatch(batchId),
-    enabled: batchId !== '',
+    enabled: batchId !== '' && dirtyEntries.size === 0,
   });
   const submit = useMutation({
     mutationFn: () => teacherApi.submitResultBatch(auth.apiClient, batchId),
@@ -411,6 +448,7 @@ export function TeacherResultBatchPage() {
         actions={
           canEdit(batch.status) ? (
             <Button
+              disabled={dirtyEntries.size > 0}
               loading={submit.isPending}
               onClick={() => {
                 submit.mutate();
@@ -450,6 +488,11 @@ export function TeacherResultBatchPage() {
           </p>
         )}
       </Panel>
+      {dirtyEntries.size > 0 ? (
+        <p role="status" className="form-alert">
+          Save each edited entry before submitting for review or leaving this page.
+        </p>
+      ) : null}
       <div className="result-entry-list">
         {batch.entries.length === 0 ? (
           <Panel>
@@ -468,7 +511,9 @@ export function TeacherResultBatchPage() {
                     component.key + ':' + component.state + ':' + (component.score ?? ''),
                 )
                 .join('|');
-            return <ResultEntryEditor batch={batch} entry={entry} key={snapshotKey} />;
+            return (
+              <ResultEntryEditor batch={batch} entry={entry} onDirty={onDirty} key={snapshotKey} />
+            );
           })
         )}
       </div>

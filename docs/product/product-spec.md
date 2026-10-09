@@ -195,3 +195,7 @@ The following are out of scope unless this specification is intentionally revise
 - chat or messaging;
 - library management; and
 - discipline management.
+
+## Approved extension: daily school experience
+
+On 8 October 2026 the school owner approved the release-readiness programme, including the timetable defined in `../domain/timetable.md`. That document supersedes the original timetable exclusion only. Other V1 boundaries remain in force.

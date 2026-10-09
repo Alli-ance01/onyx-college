@@ -36,6 +36,7 @@ const codesByDomain = {
     'tracks.manage',
     'subjects.manage',
     'subject_offerings.manage',
+    'timetable.manage',
   ],
   enrollments: ['enrollments.read', 'enrollments.manage', 'enrollments.promote'],
   assignments: [

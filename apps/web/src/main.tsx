@@ -7,6 +7,7 @@ import { AppProviders } from './app/providers/app-providers.js';
 import { appRoutes } from './app/router/routes.js';
 import './styles/global.css';
 import './styles/school-design.css';
+import './styles/daily-school.css';
 
 const rootElement = document.querySelector<HTMLDivElement>('#root');
 

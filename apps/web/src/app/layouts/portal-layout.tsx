@@ -1,3 +1,4 @@
+import { ConnectionStatus } from '../../shared/ui/connection-status.js';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router';
 
@@ -282,6 +283,7 @@ export function PortalLayout({ portalName }: PortalLayoutProps) {
               ))}
             </nav>
           ) : null}
+          <ConnectionStatus />
           <Outlet />
         </div>
       </div>

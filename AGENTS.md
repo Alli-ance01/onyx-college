@@ -444,12 +444,13 @@ Test behavior and invariants.
 
 ## Scope Discipline
 
+The timetable was explicitly approved as a scope extension on 8 October 2026; see `docs/domain/timetable.md`.
+
 These are OUT OF SCOPE for V1 unless documentation is intentionally changed:
 
 - school fees
 - payments
 - attendance
-- timetable
 - parent portal
 - CBT/examinations
 - student assignment submission

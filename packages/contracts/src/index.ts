@@ -51,3 +51,5 @@ export * from './academics.js';
 export * from './communications.js';
 export * from './results.js';
 export * from './teachers.js';
+
+export * from './timetable.js';

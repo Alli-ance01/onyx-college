@@ -1,3 +1,4 @@
+import { TimetableModel } from '../../modules/timetable/infrastructure/timetable-model.js';
 import { PermissionModel } from '../../modules/access-control/infrastructure/permission-model.js';
 import { RoleModel } from '../../modules/access-control/infrastructure/role-model.js';
 import {
@@ -74,6 +75,7 @@ export interface IndexableApplicationModel {
  * persisted model must be added here in the same change that introduces it.
  */
 export const applicationModels: readonly IndexableApplicationModel[] = [
+  TimetableModel,
   AcademicSessionModel,
   AnnouncementModel,
   AssessmentSchemeModel,

@@ -203,7 +203,7 @@ Every phase includes database, backend, frontend, authorization, audit, and test
 - Testing/operations: complete E2E suite, accessibility, capacity checks, restore rehearsal, security review, runbooks, monitoring/alerts.
 - Complete when all V1 workflows are observable, supportable, accessible, backed up, and release-ready.
 
-PWA installability, Web Push, native packaging, attendance, fees, timetable, and every other documented out-of-scope module are not silently added to these phases.
+PWA installability, Web Push, native packaging, attendance, fees, and every other documented out-of-scope module are not silently added to these phases.
 
 ## Operational approvals still required
 
@@ -217,3 +217,5 @@ These are architecture/operational choices, not unresolved product/domain questi
 6. confirm production domain names and whether a persistent staging environment is funded.
 
 The application keeps these concerns behind adapters where applicable. A controlled deployment can proceed without choosing every future vendor, but real student intake requires the applicable security, retention, recovery, and operational decisions.
+
+The timetable is an explicitly approved extension: see [domain scope](../domain/timetable.md). Staging and recovery steps are in the [release rehearsal](../operations/release-rehearsal.md).

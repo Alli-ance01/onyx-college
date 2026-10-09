@@ -142,3 +142,7 @@ Authorized administrators manage administrator accounts, Role assignments, and P
 Audit Logs are append-only and accessible only with explicit permission. They include important student, teacher, academic, result, security, and permission mutations without storing secrets.
 
 V1 notifications are in-app. Business workflows publish notification intents without coupling themselves to a future delivery channel.
+
+## Daily portal and readiness extension — 8 October 2026
+
+See [Timetable and daily work](../domain/timetable.md) for the approved weekly schedule, ownership rules and daily student agenda. Staff forms preserve failed submissions and warn before discarding unsaved work; result entry must be saved before submission. The [pilot checklist](../operations/pilot-checklist.md) defines acceptance tasks for this role.

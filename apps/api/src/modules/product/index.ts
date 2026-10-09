@@ -1,3 +1,4 @@
+import { createTimetableRouter } from '../timetable/http/timetable-router.js';
 import { Router } from 'express';
 
 import type { AppEnvironment } from '../../config/environment.js';
@@ -29,6 +30,7 @@ export function createProductModule(environment: AppEnvironment): { router: Rout
 
   router.use(createAcademicManagementRouter(dependencies));
   router.use(createTeacherRouter(dependencies));
+  router.use(createTimetableRouter(dependencies));
   router.use(createAssignmentRouter(dependencies));
   router.use(createDocumentAdminRouter(dependencies));
   router.use(createAnnouncementRouter(dependencies));

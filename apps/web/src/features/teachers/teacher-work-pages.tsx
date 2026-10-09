@@ -4,6 +4,7 @@ import { useMemo, useState, type SyntheticEvent } from 'react';
 
 import { ApiClientError } from '../../lib/api/index.js';
 import { useAuthSession } from '../../lib/auth/use-auth-session.js';
+import { useUnsavedChanges } from '../../shared/hooks/use-unsaved-changes.js';
 import { formText } from '../../shared/forms/form-data.js';
 import {
   Button,
@@ -34,7 +35,10 @@ function assignmentScopeLabel(assignment: TeachingAssignmentDto): string {
 export function TeacherAssignmentsPage() {
   const auth = useAuthSession();
   const cache = useQueryClient();
+  const [dirty, setDirty] = useState(false);
+  const [uploadError, setUploadError] = useState<string>();
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
+  useUnsavedChanges(dirty || Object.keys(uploadProgress).length > 0);
   const scopes = useQuery({
     queryFn: () => teacherApi.academicAssignments(auth.apiClient),
     queryKey: teacherQueryKeys.teachingAssignments,
@@ -67,18 +71,27 @@ export function TeacherAssignmentsPage() {
 
   function submit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    const element = event.currentTarget;
+    const form = new FormData(element);
     const dueAt = new Date(formText(form, 'dueAt'));
-    create.mutate({
-      dueAt: dueAt.toISOString(),
-      instructions: formText(form, 'instructions'),
-      teachingAssignmentId: formText(form, 'teachingAssignmentId'),
-      title: formText(form, 'title'),
-    });
-    event.currentTarget.reset();
+    create.mutate(
+      {
+        dueAt: dueAt.toISOString(),
+        instructions: formText(form, 'instructions'),
+        teachingAssignmentId: formText(form, 'teachingAssignmentId'),
+        title: formText(form, 'title'),
+      },
+      {
+        onSuccess: () => {
+          element.reset();
+          setDirty(false);
+        },
+      },
+    );
   }
 
   async function upload(assignment: AssignmentDto, file: File) {
+    setUploadError(undefined);
     setUploadProgress((current) => ({ ...current, [assignment.id]: 0 }));
     try {
       await teacherApi.uploadAssignmentAttachment(
@@ -90,6 +103,10 @@ export function TeacherAssignmentsPage() {
         },
       );
       await refresh();
+    } catch (error) {
+      setUploadError(
+        error instanceof Error ? error.message : 'The file could not be uploaded. Try again.',
+      );
     } finally {
       setUploadProgress((current) => {
         return Object.fromEntries(
@@ -106,51 +123,75 @@ export function TeacherAssignmentsPage() {
         eyebrow="Teaching"
         title="Assignments"
       />
+      {scopes.isError ? (
+        <ErrorState
+          title="Teaching assignments unavailable"
+          onRetry={() => void scopes.refetch()}
+        />
+      ) : null}
       <Panel
         title="Create assignment"
-        description="Students can view and download published work; submission is not part of V1."
+        description="Students can read and download this work. Include instructions for handing it in to you."
       >
-        <form className="form-stack" onSubmit={submit}>
-          <div className="form-grid form-grid--two">
-            <FormField controlId="assignment-scope" label="Class and subject">
-              <select name="teachingAssignmentId" required defaultValue="">
-                <option disabled value="">
-                  Select an assigned scope
-                </option>
-                {teachingScopes.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {assignmentScopeLabel(item)}
+        <form
+          className="form-stack"
+          onChange={() => {
+            setDirty(true);
+          }}
+          onSubmit={submit}
+        >
+          <fieldset className="form-stack form-fieldset" disabled={create.isPending}>
+            <div className="form-grid form-grid--two">
+              <FormField controlId="assignment-scope" label="Class and subject">
+                <select name="teachingAssignmentId" required defaultValue="">
+                  <option disabled value="">
+                    Select an assigned scope
                   </option>
-                ))}
-              </select>
+                  {teachingScopes.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {assignmentScopeLabel(item)}
+                    </option>
+                  ))}
+                </select>
+              </FormField>
+              <FormField controlId="assignment-due" label="Due date and time">
+                <input name="dueAt" required type="datetime-local" />
+              </FormField>
+            </div>
+            <FormField controlId="assignment-title" label="Title">
+              <input name="title" required minLength={2} maxLength={200} />
             </FormField>
-            <FormField controlId="assignment-due" label="Due date and time">
-              <input name="dueAt" required type="datetime-local" />
+            <FormField controlId="assignment-instructions" label="Instructions">
+              <textarea name="instructions" required rows={5} maxLength={20000} />
             </FormField>
-          </div>
-          <FormField controlId="assignment-title" label="Title">
-            <input name="title" required minLength={2} maxLength={200} />
-          </FormField>
-          <FormField controlId="assignment-instructions" label="Instructions">
-            <textarea name="instructions" required rows={5} maxLength={20000} />
-          </FormField>
-          {mutationError(create.error) === undefined ? null : (
-            <p className="form-alert form-alert--error" role="alert">
-              {mutationError(create.error)}
-            </p>
-          )}
-          <Button
-            disabled={teachingScopes.length === 0}
-            loading={create.isPending}
-            loadingLabel="Creating"
-            type="submit"
-          >
-            Save draft
-          </Button>
+            {mutationError(create.error) === undefined ? null : (
+              <p className="form-alert form-alert--error" role="alert">
+                {mutationError(create.error)}
+              </p>
+            )}
+            <Button
+              disabled={teachingScopes.length === 0}
+              loading={create.isPending}
+              loadingLabel="Creating"
+              type="submit"
+            >
+              Save draft
+            </Button>
+          </fieldset>
         </form>
       </Panel>
       {query.isError ? (
         <ErrorState onRetry={() => void query.refetch()} title="Assignments unavailable" />
+      ) : null}
+      {uploadError === undefined ? null : (
+        <p role="alert" className="form-alert form-alert--error">
+          {uploadError}
+        </p>
+      )}
+      {publish.error !== null || archive.error !== null ? (
+        <p role="alert" className="form-alert form-alert--error">
+          {mutationError(publish.error ?? archive.error)}
+        </p>
       ) : null}
       <DataTable<AssignmentDto>
         caption="Teacher assignments"
@@ -210,7 +251,7 @@ export function TeacherAssignmentsPage() {
                       />
                     </label>
                     <Button
-                      disabled={publish.isPending}
+                      disabled={publish.isPending || uploadProgress[row.id] !== undefined}
                       onClick={() => {
                         publish.mutate(row.id);
                       }}
@@ -244,6 +285,8 @@ export function TeacherAssignmentsPage() {
 export function TeacherAnnouncementsPage() {
   const auth = useAuthSession();
   const cache = useQueryClient();
+  const [dirty, setDirty] = useState(false);
+  useUnsavedChanges(dirty);
   const scopes = useQuery({
     queryFn: () => teacherApi.academicAssignments(auth.apiClient),
     queryKey: teacherQueryKeys.teachingAssignments,
@@ -273,22 +316,30 @@ export function TeacherAnnouncementsPage() {
 
   function submit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    const element = event.currentTarget;
+    const form = new FormData(element);
     const scopeId = formText(form, 'scopeId');
     const scope = activeScopes.find((item) => item.id === scopeId);
     if (scope === undefined) return;
     const expiresValue = formText(form, 'expiresAt');
-    create.mutate({
-      audience: {
-        classLevelId: scope.classLevel.id,
-        type: scope.track === undefined ? ('CLASS' as const) : ('CLASS_TRACK' as const),
-        ...(scope.track === undefined ? {} : { trackId: scope.track.id }),
+    create.mutate(
+      {
+        audience: {
+          classLevelId: scope.classLevel.id,
+          type: scope.track === undefined ? ('CLASS' as const) : ('CLASS_TRACK' as const),
+          ...(scope.track === undefined ? {} : { trackId: scope.track.id }),
+        },
+        body: formText(form, 'body'),
+        title: formText(form, 'title'),
+        ...(expiresValue === '' ? {} : { expiresAt: new Date(expiresValue).toISOString() }),
       },
-      body: formText(form, 'body'),
-      title: formText(form, 'title'),
-      ...(expiresValue === '' ? {} : { expiresAt: new Date(expiresValue).toISOString() }),
-    });
-    event.currentTarget.reset();
+      {
+        onSuccess: () => {
+          element.reset();
+          setDirty(false);
+        },
+      },
+    );
   }
 
   return (
@@ -298,42 +349,64 @@ export function TeacherAnnouncementsPage() {
         eyebrow="Communication"
         title="Announcements"
       />
+      {scopes.isError ? (
+        <ErrorState
+          title="Teaching assignments unavailable"
+          onRetry={() => void scopes.refetch()}
+        />
+      ) : null}
       <Panel title="Create announcement">
-        <form className="form-stack" onSubmit={submit}>
-          <div className="form-grid form-grid--two">
-            <FormField controlId="announcement-scope" label="Audience">
-              <select name="scopeId" required defaultValue="">
-                <option disabled value="">
-                  Select assigned class
-                </option>
-                {activeScopes.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.classLevel.name}
-                    {item.track === undefined ? '' : ` / ${item.track.name}`}
+        <form
+          className="form-stack"
+          onChange={() => {
+            setDirty(true);
+          }}
+          onSubmit={submit}
+        >
+          <fieldset className="form-stack form-fieldset" disabled={create.isPending}>
+            <div className="form-grid form-grid--two">
+              <FormField controlId="announcement-scope" label="Audience">
+                <select name="scopeId" required defaultValue="">
+                  <option disabled value="">
+                    Select assigned class
                   </option>
-                ))}
-              </select>
+                  {activeScopes.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.classLevel.name}
+                      {item.track === undefined ? '' : ` / ${item.track.name}`}
+                    </option>
+                  ))}
+                </select>
+              </FormField>
+              <FormField controlId="announcement-expiry" label="Expires" optional>
+                <input name="expiresAt" type="datetime-local" />
+              </FormField>
+            </div>
+            <FormField controlId="announcement-title" label="Title">
+              <input name="title" required minLength={2} maxLength={200} />
             </FormField>
-            <FormField controlId="announcement-expiry" label="Expires" optional>
-              <input name="expiresAt" type="datetime-local" />
+            <FormField controlId="announcement-body" label="Message">
+              <textarea name="body" required rows={5} maxLength={20000} />
             </FormField>
-          </div>
-          <FormField controlId="announcement-title" label="Title">
-            <input name="title" required minLength={2} maxLength={200} />
-          </FormField>
-          <FormField controlId="announcement-body" label="Message">
-            <textarea name="body" required rows={5} maxLength={20000} />
-          </FormField>
-          {mutationError(create.error) === undefined ? null : (
-            <p className="form-alert form-alert--error" role="alert">
-              {mutationError(create.error)}
-            </p>
-          )}
-          <Button disabled={activeScopes.length === 0} loading={create.isPending} type="submit">
-            Save draft
-          </Button>
+            {mutationError(create.error) === undefined ? null : (
+              <p className="form-alert form-alert--error" role="alert">
+                {mutationError(create.error)}
+              </p>
+            )}
+            <Button disabled={activeScopes.length === 0} loading={create.isPending} type="submit">
+              Save draft
+            </Button>
+          </fieldset>
         </form>
       </Panel>
+      {query.isError ? (
+        <ErrorState title="Announcements unavailable" onRetry={() => void query.refetch()} />
+      ) : null}
+      {publish.error !== null || withdraw.error !== null ? (
+        <p role="alert" className="form-alert form-alert--error">
+          {mutationError(publish.error ?? withdraw.error)}
+        </p>
+      ) : null}
       <DataTable<AnnouncementDto>
         caption="Teacher announcements"
         loading={query.isPending}
