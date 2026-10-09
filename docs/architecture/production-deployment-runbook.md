@@ -29,6 +29,7 @@ pnpm lint
 pnpm typecheck
 pnpm test
 pnpm test:integration
+pnpm test:e2e
 pnpm build
 ```
 
@@ -201,3 +202,7 @@ A `DOCUMENT_STORAGE_UNAVAILABLE` response is a 503 from the storage adapter. It 
 A browser `ERR_CONNECTION_RESET` means the connection failed; it does not prove a Cloudinary failure. Correlate it with Render restart/deployment events and API readiness. A 401 on a protected read may trigger one session refresh and retry. Repeated 401s require checking the refresh request, browser cookie acceptance, exact `WEB_ORIGIN`, and the production `Secure`/`SameSite=None` cookie configuration. Do not make private files public or disable authentication/CORS as a workaround.
 
 Uploads refresh expired authentication but are not automatically replayed. The form tells the user to select the file again after a successful refresh. Network failures, timeouts, and 503s settle the upload state and permit retry; unsaved form fields are retained when document metadata reloads. These recovery paths are covered by the browser suite against local storage. Provider credentials and a real hosted upload still need staging verification.
+
+## Staging and school pilot
+
+Use the [release rehearsal](../operations/release-rehearsal.md), separate `render.staging.yaml` manifest, and [pilot task checklist](../operations/pilot-checklist.md). Local restore tests and browser results do not replace credentialed provider checks or school acceptance.

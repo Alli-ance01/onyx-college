@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import { useAuthSession } from '../../lib/auth/use-auth-session.js';
+import { confirmDiscardUnsavedChanges } from '../../shared/hooks/use-unsaved-changes.js';
 import { Button } from '../../shared/ui/button.js';
 
 export function SignOutButton() {
@@ -8,6 +9,7 @@ export function SignOutButton() {
   const [pending, setPending] = useState(false);
   const [failed, setFailed] = useState(false);
   async function signOut() {
+    if (!confirmDiscardUnsavedChanges()) return;
     setPending(true);
     setFailed(false);
     try {

@@ -1,4 +1,4 @@
-import { Panel, EmptyState } from '../../shared/ui/index.js';
+import { DailyAgenda } from './daily-agenda.js';
 import { Icon } from '../../shared/ui/icon.js';
 import type { StudentDashboardDto, StudentProfileDto, SuccessEnvelope } from '@onyx/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -9,7 +9,6 @@ import { ApiClientError } from '../../lib/api/api-client.js';
 import { useAuthSession } from '../../lib/auth/use-auth-session.js';
 import { ErrorState } from '../../shared/ui/async-state.js';
 import { DocumentViewButton } from '../student-onboarding/document-view-button.js';
-import { studentPortalApi, studentPortalQueryKeys } from '../student-portal/student-portal-api.js';
 
 function initials(name: string): string {
   return name
@@ -28,18 +27,6 @@ export function StudentDashboardPage() {
       (await auth.apiClient.request<SuccessEnvelope<StudentDashboardDto>>('/students/me/dashboard'))
         .data,
   });
-  const assignments = useQuery({
-    queryKey: studentPortalQueryKeys.assignments,
-    queryFn: () => studentPortalApi.assignments(auth.apiClient),
-  });
-  const announcements = useQuery({
-    queryKey: studentPortalQueryKeys.announcements,
-    queryFn: () => studentPortalApi.announcements(auth.apiClient),
-  });
-  const reports = useQuery({
-    queryKey: studentPortalQueryKeys.reports,
-    queryFn: () => studentPortalApi.reports(auth.apiClient),
-  });
   if (query.isLoading)
     return <main className="portal-content route-status">Loading your dashboard…</main>;
   if (query.isError || query.data === undefined)
@@ -50,7 +37,7 @@ export function StudentDashboardPage() {
     );
   const student = query.data;
   return (
-    <main className="portal-content product-page">
+    <main className="portal-content product-page student-dashboard">
       <header className="page-heading">
         <div>
           <p className="eyebrow">Student dashboard</p>
@@ -86,89 +73,7 @@ export function StudentDashboardPage() {
           </div>
         </dl>
       </section>
-      <section className="dashboard-grid">
-        <ModuleSummary
-          count={assignments.data?.length}
-          href="/student/assignments"
-          title="Assignments"
-          text={
-            assignments.isPending
-              ? 'Loading your assignments…'
-              : assignments.isError
-                ? 'Assignments could not be loaded.'
-                : 'Classwork and instructions from your teachers.'
-          }
-        />
-        <ModuleSummary
-          count={announcements.data?.length}
-          href="/student/announcements"
-          title="Announcements"
-          text={
-            announcements.isPending
-              ? 'Loading school notices…'
-              : announcements.isError
-                ? 'Announcements could not be loaded.'
-                : 'Updates from your classes and the school.'
-          }
-        />
-        <ModuleSummary
-          count={reports.data?.length}
-          href="/student/results"
-          title="Results"
-          text={
-            reports.isPending
-              ? 'Loading your results…'
-              : reports.isError
-                ? 'Results could not be loaded.'
-                : reports.data[0] === undefined
-                  ? 'No report cards have been published.'
-                  : `${reports.data[0].sessionLabel} / ${reports.data[0].termName}`
-          }
-        />
-      </section>
-      <div className="student-day-grid">
-        <Panel title="Your classwork" description="The latest assignments shared by your teachers.">
-          {assignments.isError ? (
-            <ErrorState title="Classwork unavailable" onRetry={() => void assignments.refetch()} />
-          ) : assignments.isPending ? (
-            <p role="status">Loading classwork…</p>
-          ) : assignments.data.length === 0 ? (
-            <EmptyState
-              title="You’re all caught up"
-              description="When your teachers publish assignments, you can find them here."
-            />
-          ) : (
-            <ul className="record-list">
-              {assignments.data.slice(0, 3).map((item) => (
-                <li key={item.id}>
-                  <Link to="/student/assignments">{item.title}</Link>
-                  <small>Open assignments for instructions and due dates</small>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Panel>
-        <Panel title="From the school" description="Stay connected with what’s happening at Onyx.">
-          {announcements.isError ? (
-            <ErrorState title="Notices unavailable" onRetry={() => void announcements.refetch()} />
-          ) : announcements.isPending ? (
-            <p role="status">Loading notices…</p>
-          ) : announcements.data.length === 0 ? (
-            <EmptyState
-              title="A quiet noticeboard"
-              description="New school and class announcements will appear here."
-            />
-          ) : (
-            <ul className="record-list">
-              {announcements.data.slice(0, 3).map((item) => (
-                <li key={item.id}>
-                  <Link to="/student/announcements">{item.title}</Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Panel>
-      </div>
+      <DailyAgenda sessionId={student.currentEnrollment?.session.id} />
       <div className="student-quick-links" aria-label="Student shortcuts">
         <Link to="/student/subjects">
           <Icon name="book" />
@@ -184,27 +89,6 @@ export function StudentDashboardPage() {
         </Link>
       </div>
     </main>
-  );
-}
-
-function ModuleSummary({
-  count,
-  href,
-  text,
-  title,
-}: {
-  count: number | undefined;
-  href: string;
-  text: string;
-  title: string;
-}) {
-  return (
-    <article className="empty-module surface">
-      <span aria-hidden="true">{count ?? '—'}</span>
-      <h2>{title}</h2>
-      <p>{text}</p>
-      <Link to={href}>View {title.toLocaleLowerCase()}</Link>
-    </article>
   );
 }
 

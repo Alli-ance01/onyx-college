@@ -1,7 +1,7 @@
 import type { TermReportDto } from '@onyx/contracts';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Link, useParams } from 'react-router';
+import { Link, useParams, useSearchParams } from 'react-router';
 
 import { useAuthSession } from '../../lib/auth/use-auth-session.js';
 import {
@@ -19,6 +19,8 @@ import { studentPortalApi, studentPortalQueryKeys } from './student-portal-api.j
 import { formatDate } from './student-portal-utils.js';
 
 export function StudentResultsPage() {
+  const [params, setParams] = useSearchParams();
+  const selectedSession = params.get('session') ?? '';
   const auth = useAuthSession();
   const reports = useQuery({
     queryKey: studentPortalQueryKeys.reports,
@@ -32,6 +34,30 @@ export function StudentResultsPage() {
         eyebrow="Academic performance"
         title="Results and report cards"
       />
+      <label className="timetable-term">
+        Academic session
+        <select
+          value={selectedSession}
+          onChange={(event) => {
+            setParams(event.target.value === '' ? {} : { session: event.target.value });
+          }}
+        >
+          <option value="">All published sessions</option>
+          {[...new Set(reports.data?.map((report) => report.sessionLabel))]
+            .sort()
+            .reverse()
+            .map((label) => (
+              <option key={label} value={label}>
+                {label}
+              </option>
+            ))}
+        </select>
+      </label>
+      {reports.isSuccess &&
+      selectedSession !== '' &&
+      !reports.data.some((report) => report.sessionLabel === selectedSession) ? (
+        <p>No published report is available for this session. Choose another session.</p>
+      ) : null}
       {reports.isPending ? <LoadingState label="Loading report cards" rows={4} /> : null}
       {reports.isError ? (
         <ErrorState onRetry={() => void reports.refetch()} title="Results unavailable" />
@@ -44,34 +70,39 @@ export function StudentResultsPage() {
       ) : null}
       {reports.data === undefined || reports.data.length === 0 ? null : (
         <div className="student-report-grid">
-          {reports.data.map((report) => (
-            <article className="student-report-summary" key={report.id}>
-              <div>
-                <p className="student-record-card__meta">
-                  {report.sessionLabel} / {report.termName}
-                </p>
-                <h2>{report.classLevel}</h2>
-                <p>{report.track ?? 'Junior school'}</p>
-              </div>
-              <dl>
+          {reports.data
+            .filter((report) => selectedSession === '' || report.sessionLabel === selectedSession)
+            .map((report) => (
+              <article className="student-report-summary" key={report.id}>
                 <div>
-                  <dt>Overall average</dt>
-                  <dd>{report.overallAverage}%</dd>
+                  <p className="student-record-card__meta">
+                    {report.sessionLabel} / {report.termName}
+                  </p>
+                  <h2>{report.classLevel}</h2>
+                  <p>{report.track ?? 'Junior school'}</p>
                 </div>
-                <div>
-                  <dt>Subjects</dt>
-                  <dd>{report.subjects.length}</dd>
-                </div>
-                <div>
-                  <dt>Published</dt>
-                  <dd>{formatDate(report.publishedAt)}</dd>
-                </div>
-              </dl>
-              <Link className="ui-button ui-button--secondary" to={`/student/results/${report.id}`}>
-                View report card
-              </Link>
-            </article>
-          ))}
+                <dl>
+                  <div>
+                    <dt>Overall average</dt>
+                    <dd>{report.overallAverage}%</dd>
+                  </div>
+                  <div>
+                    <dt>Subjects</dt>
+                    <dd>{report.subjects.length}</dd>
+                  </div>
+                  <div>
+                    <dt>Published</dt>
+                    <dd>{formatDate(report.publishedAt)}</dd>
+                  </div>
+                </dl>
+                <Link
+                  className="ui-button ui-button--secondary"
+                  to={`/student/results/${report.id}`}
+                >
+                  View report card
+                </Link>
+              </article>
+            ))}
         </div>
       )}
     </main>

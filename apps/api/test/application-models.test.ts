@@ -41,6 +41,7 @@ const expectedModelNames = [
   'TeachingAssignment',
   'Term',
   'TermReport',
+  'Timetable',
   'Track',
   'User',
 ];

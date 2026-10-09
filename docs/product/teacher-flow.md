@@ -101,3 +101,7 @@ A teacher may create announcements only for audiences contained within active ac
 ## 9. Loss or change of access
 
 Revoking an academic assignment immediately removes the authority it conferred while retaining the historical assignment and associated records. Account suspension, teacher deactivation, or permission removal can independently remove access. Where the risk warrants it, active authentication sessions are revoked.
+
+## Daily portal and readiness extension — 8 October 2026
+
+See [Timetable and daily work](../domain/timetable.md) for the approved weekly schedule, ownership rules and daily student agenda. Staff forms preserve failed submissions and warn before discarding unsaved work; result entry must be saved before submission. The [pilot checklist](../operations/pilot-checklist.md) defines acceptance tasks for this role.

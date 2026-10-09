@@ -1,0 +1,50 @@
+# Use separate Atlas and Cloudinary resources. Never copy production credentials.
+services:
+  - type: web
+    name: onyx-college-api-staging
+    runtime: node
+    plan: free
+    region: frankfurt
+    autoDeployTrigger: off
+    buildCommand: npx --yes pnpm@12.6.0 install --frozen-lockfile --prod=false && npx --yes pnpm@12.6.0 --filter @onyx/api... build
+    startCommand: node apps/api/dist/server.js
+    healthCheckPath: /api/v1/health/ready
+    envVars:
+      - key: NODE_VERSION
+        value: 22.19.0
+      - key: NODE_ENV
+        value: production
+      - key: WEB_ORIGIN
+        sync: false
+      - key: MONGODB_URI
+        sync: false
+      - key: LOG_LEVEL
+        value: info
+      - key: TRUST_PROXY_HOPS
+        value: '1'
+      - key: AUTH_ACCESS_TOKEN_SECRET
+        generateValue: true
+      - key: AUTH_REFRESH_TOKEN_PEPPER
+        generateValue: true
+      - key: AUTH_ISSUER
+        value: onyx-college-api-staging
+      - key: AUTH_AUDIENCE
+        value: onyx-college-portal-staging
+      - key: AUTH_COOKIE_NAME
+        value: onyx_staging_refresh
+      - key: AUTH_COOKIE_SECURE
+        value: 'true'
+      - key: AUTH_COOKIE_SAME_SITE
+        value: none
+      - key: DOCUMENT_STORAGE_DRIVER
+        value: cloudinary
+      - key: DOCUMENT_MAX_BYTES
+        value: '5242880'
+      - key: DOCUMENT_SIGNED_URL_TTL_SECONDS
+        value: '120'
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false

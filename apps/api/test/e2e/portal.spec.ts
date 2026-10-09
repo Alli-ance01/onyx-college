@@ -325,6 +325,7 @@ test('branded public pages and portal records fit phones and desktops', async ({
   await page.getByRole('button', { name: 'Sign out', exact: true }).click();
   await signIn(page, accounts.student);
   await expect(page.getByRole('heading', { name: 'Your classwork' })).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath('daily-agenda-mobile.png'), fullPage: true });
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 900 });
     await page.screenshot({
@@ -404,4 +405,75 @@ test('admin workspaces load and fit a narrow phone', async ({ page }) => {
       .toBeLessThanOrEqual(320);
   }
   expect(failures).toEqual([]);
+});
+
+test('student daily agenda and timetable show published school work on mobile', async ({
+  page,
+}, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await signIn(page, accounts.student);
+  await expect(page.getByRole('heading', { name: 'Your classwork' })).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath('daily-agenda-mobile.png'), fullPage: true });
+  await page.getByRole('link', { name: 'Exploring fractions', exact: true }).first().click();
+  await expect(page.getByText('Complete exercises one to five.', { exact: false })).toBeVisible();
+  await page.goto('/student/timetable');
+  await expect(page.getByRole('heading', { name: 'Monday', exact: true })).toBeVisible();
+  await expect(page.getByText('Mathematics', { exact: true })).toHaveCount(5);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+});
+
+test('teacher drafts survive failed saves and cancelled navigation', async ({ page }) => {
+  await signIn(page, accounts.teacher);
+  await page.goto('/teacher/assignments');
+  await page.getByLabel('Class and subject').selectOption({ index: 1 });
+  await page.getByLabel('Due date and time').fill('2027-10-20T10:00');
+  await page.getByLabel('Title', { exact: true }).fill('Preserve this classwork');
+  await page.getByLabel('Instructions').fill('Bring the completed workbook next lesson.');
+  await page.route('**/api/v1/assignments', async (route) => {
+    if (route.request().method() === 'POST')
+      await route.fulfill({
+        status: 503,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          error: {
+            code: 'SERVICE_UNAVAILABLE',
+            message: 'Temporary save failure',
+            requestId: 'test-draft',
+          },
+        }),
+      });
+    else await route.continue();
+  });
+  await page.getByRole('button', { name: 'Save draft', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('Temporary save failure');
+  await expect(page.getByLabel('Title', { exact: true })).toHaveValue('Preserve this classwork');
+  page.once('dialog', (dialog) => void dialog.dismiss());
+  await page.getByRole('button', { name: 'Sign out', exact: true }).click();
+  await expect(page).toHaveURL(/teacher\/assignments/);
+  await expect(page.getByLabel('Title', { exact: true })).toHaveValue('Preserve this classwork');
+  page.once('dialog', (dialog) => void dialog.dismiss());
+  await page
+    .getByRole('navigation', { name: /Portal navigation/ })
+    .getByRole('link', { name: 'Dashboard', exact: true })
+    .click();
+  await expect(page).toHaveURL(/teacher\/assignments/);
+  await page.unroute('**/api/v1/assignments');
+  await page.getByRole('button', { name: 'Save draft', exact: true }).click();
+  await expect(page.getByLabel('Title', { exact: true })).toHaveValue('');
+  await expect(page.getByText('Preserve this classwork', { exact: true })).toBeVisible();
+});
+
+test('admin publishes a timetable revision and clash errors preserve edits', async ({ page }) => {
+  await signIn(page, accounts.admin);
+  await page.goto('/admin/timetable');
+  await expect(page.getByText(/Revision 1/)).toBeVisible();
+  await page.getByRole('button', { name: 'Add lesson', exact: true }).click();
+  await page.getByLabel('Teaching assignment 6', { exact: true }).selectOption({ index: 1 });
+  await page.getByRole('button', { name: 'Save and publish timetable' }).click();
+  await expect(page.getByRole('alert')).toContainText('overlap');
+  await expect(page.getByLabel('Teaching assignment 6', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Remove lesson 6', exact: true }).click();
+  await page.getByRole('button', { name: 'Save and publish timetable' }).click();
+  await expect(page.getByText('Timetable saved and published.')).toBeVisible();
+  await expect(page.getByText(/Revision 2/)).toBeVisible();
 });

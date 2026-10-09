@@ -1,3 +1,4 @@
+import { ConnectionStatus } from '../../shared/ui/connection-status.js';
 import { useEffect } from 'react';
 import { Brand } from '../../shared/ui/brand.js';
 import { NavLink, Outlet, useLocation } from 'react-router';
@@ -35,6 +36,7 @@ export function PublicLayout() {
           </NavLink>
         </nav>
       </header>
+      <ConnectionStatus />
       <Outlet />
       <footer className="public-footer">
         <Brand />

@@ -122,3 +122,7 @@ Promotion from JSS3 to SS1 requires Science, Arts, or Commercial track selection
 ## 8. Notifications
 
 The student may receive in-app notifications for registration decisions or requested changes, assignment and announcement publication, result publication, and correction decisions. Notification delivery does not itself determine whether the underlying resource is authorized; access is rechecked when the student opens it.
+
+## Daily portal and readiness extension — 8 October 2026
+
+See [Timetable and daily work](../domain/timetable.md) for the approved weekly schedule, ownership rules and daily student agenda. Staff forms preserve failed submissions and warn before discarding unsaved work; result entry must be saved before submission. The [pilot checklist](../operations/pilot-checklist.md) defines acceptance tasks for this role.

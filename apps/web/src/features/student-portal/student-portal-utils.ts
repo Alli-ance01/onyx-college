@@ -21,7 +21,10 @@ export function formatDateTime(value: string): string {
 export function notificationResourceHref(
   notification: Pick<NotificationDto, 'resourceId' | 'resourceType'>,
 ): string | undefined {
-  if (notification.resourceType === 'Assignment') return '/student/assignments';
+  if (notification.resourceType === 'Assignment')
+    return notification.resourceId === undefined
+      ? '/student/assignments'
+      : `/student/assignments?assignment=${encodeURIComponent(notification.resourceId)}`;
   if (notification.resourceType === 'Announcement') return '/student/announcements';
   if (notification.resourceType === 'TermReport' && notification.resourceId !== undefined) {
     return `/student/results/${notification.resourceId}`;

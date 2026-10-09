@@ -183,7 +183,7 @@ describe('student onboarding visible flows', () => {
     });
     expect(await screen.findByRole('heading', { name: 'Welcome, Chidi Okafor' })).toBeVisible();
     expect(screen.getByText('ONYX/0001')).toBeVisible();
-    expect(screen.getByRole('heading', { name: 'Assignments' })).toBeVisible();
+    expect(screen.getByRole('heading', { name: 'Your classwork' })).toBeVisible();
   });
 
   it('renders the database-backed admin registration queue', async () => {

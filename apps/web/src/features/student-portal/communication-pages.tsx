@@ -1,3 +1,4 @@
+import { useSearchParams, Link } from 'react-router';
 import type { AnnouncementDto, AssignmentDto } from '@onyx/contracts';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
@@ -91,6 +92,8 @@ function AssignmentCard({
 
 export function StudentAssignmentsPage() {
   const auth = useAuthSession();
+  const [params] = useSearchParams();
+  const focusedId = params.get('assignment');
   const [filter, setFilter] = useState<'ALL' | 'OPEN' | 'PAST'>('ALL');
   const [currentTimestamp] = useState(() => Date.now());
   const query = useQuery({
@@ -98,22 +101,23 @@ export function StudentAssignmentsPage() {
     queryFn: () => studentPortalApi.assignments(auth.apiClient),
   });
   const assignments = useMemo(() => {
-    const rows = query.data ?? [];
+    const rows = (query.data ?? []).filter((item) => focusedId === null || item.id === focusedId);
     if (filter === 'ALL') return rows;
     return rows.filter((assignment) =>
       filter === 'PAST'
         ? new Date(assignment.dueAt).getTime() < currentTimestamp
         : new Date(assignment.dueAt).getTime() >= currentTimestamp,
     );
-  }, [currentTimestamp, filter, query.data]);
+  }, [currentTimestamp, filter, query.data, focusedId]);
 
   return (
     <main className="portal-content product-page student-portal-page">
       <PageHeader
-        description="Read instructions and securely open files published for your current curriculum. Assignment submission is not part of this portal."
+        description="Read your teachers’ instructions, check due dates, and download classwork. Follow each teacher’s instructions for handing in work."
         eyebrow="Academic work"
         title="Assignments"
       />
+      {focusedId === null ? null : <Link to="/student/assignments">← Show all assignments</Link>}
       <div className="student-filter-bar" role="group" aria-label="Filter assignments">
         {(['ALL', 'OPEN', 'PAST'] as const).map((item) => (
           <button

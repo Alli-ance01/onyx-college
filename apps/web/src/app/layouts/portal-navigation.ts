@@ -17,6 +17,7 @@ const studentNavigation: readonly NavigationGroup[] = [
     label: 'Student portal',
     items: [
       { label: 'Dashboard', shortLabel: 'D', to: '/student/dashboard' },
+      { label: 'Timetable', shortLabel: 'T', to: '/student/timetable' },
       { label: 'Assignments', shortLabel: 'A', to: '/student/assignments' },
       { label: 'Announcements', shortLabel: 'N', to: '/student/announcements' },
       { label: 'Results', shortLabel: 'R', to: '/student/results' },
@@ -40,6 +41,7 @@ const teacherNavigation: readonly NavigationGroup[] = [
     label: 'Teaching',
     items: [
       { label: 'Dashboard', shortLabel: 'D', to: '/teacher' },
+      { label: 'Timetable', shortLabel: 'T', to: '/teacher/timetable' },
       {
         label: 'My classes',
         permissions: ['students.read', 'enrollments.read'],
@@ -160,6 +162,12 @@ const adminNavigation: readonly NavigationGroup[] = [
   {
     label: 'Academic structure',
     items: [
+      {
+        label: 'Timetable',
+        shortLabel: 'T',
+        to: '/admin/timetable',
+        permissions: ['timetable.manage'],
+      },
       {
         label: 'Sessions',
         permissions: ['sessions.manage'],

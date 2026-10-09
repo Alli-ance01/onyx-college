@@ -66,6 +66,12 @@ export const appRoutes: RouteObject[] = [
         element: <PortalLayout portalName="Student Portal" />,
         errorElement: <RouteErrorBoundary />,
         children: [
+          {
+            path: 'timetable',
+            lazy: async () => ({
+              Component: (await import('../../features/timetable/timetable-page.js')).TimetablePage,
+            }),
+          },
           { index: true, element: <Navigate replace to="dashboard" /> },
           {
             path: 'dashboard',
@@ -159,6 +165,12 @@ export const appRoutes: RouteObject[] = [
         errorElement: <RouteErrorBoundary />,
         children: [
           {
+            path: 'timetable',
+            lazy: async () => ({
+              Component: (await import('../../features/timetable/timetable-page.js')).TimetablePage,
+            }),
+          },
+          {
             index: true,
             lazy: async () => ({
               Component: (await import('../../features/teachers/teacher-overview-pages.js'))
@@ -249,6 +261,12 @@ export const appRoutes: RouteObject[] = [
         element: <PortalLayout portalName="Admin Portal" />,
         errorElement: <RouteErrorBoundary />,
         children: [
+          {
+            path: 'timetable',
+            lazy: async () => ({
+              Component: (await import('../../features/timetable/timetable-page.js')).TimetablePage,
+            }),
+          },
           {
             index: true,
             lazy: async () => ({

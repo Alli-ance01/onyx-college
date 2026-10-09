@@ -1,3 +1,4 @@
+import { useUnsavedChanges } from '../../shared/hooks/use-unsaved-changes.js';
 import type {
   AcademicSetupDto,
   RegistrationCustomField,
@@ -224,6 +225,7 @@ export function RegistrationPage() {
   const form = useForm<RegistrationDraftInput>({ defaultValues: emptyDraft, mode: 'onBlur' });
   const { dirtyFields } = useFormState({ control: form.control });
   const hasUnsavedChanges = Object.keys(dirtyFields).length > 0;
+  useUnsavedChanges(hasUnsavedChanges || uploadProgress !== undefined);
   const registration = registrationQuery.data;
   useEffect(() => {
     if (registration !== undefined)

@@ -209,6 +209,113 @@ await agent
   })
   .expect(201);
 
+// Populate daily school life through permission-checked API commands.
+const academicSessionId = text(setup, 'data', 'activeSession', 'id');
+const termId = text(setup, 'data', 'activeTerm', 'id');
+const subject = await request(app)
+  .post('/api/v1/subjects')
+  .auth(adminToken, { type: 'bearer' })
+  .send({ code: 'MATH', name: 'Mathematics' })
+  .expect(201);
+const subjectId = text(subject, 'data', 'id');
+await request(app)
+  .post('/api/v1/subject-offerings')
+  .auth(adminToken, { type: 'bearer' })
+  .send({ academicSessionId, classLevelId: classLevel.id, subjectId, classification: 'REQUIRED' })
+  .expect(201);
+const teaching = await request(app)
+  .post('/api/v1/teaching-assignments')
+  .auth(adminToken, { type: 'bearer' })
+  .send({
+    academicSessionId,
+    classLevelId: classLevel.id,
+    subjectId,
+    teacherId: text(staff, 'data', 'teacherId'),
+    type: 'TEACHING',
+  })
+  .expect(201);
+const teachingAssignmentId = text(teaching, 'data', 'id');
+await request(app)
+  .put(`/api/v1/timetables/${termId}`)
+  .auth(adminToken, { type: 'bearer' })
+  .send({
+    version: 0,
+    timeZone: 'Africa/Lagos',
+    lessons: [1, 2, 3, 4, 5].map((weekday) => ({
+      teachingAssignmentId,
+      weekday,
+      startsAt: '08:00',
+      endsAt: '09:00',
+      room: 'Room 1',
+    })),
+  })
+  .expect(200);
+const teacherLogin = await request(app)
+  .post('/api/v1/auth/login')
+  .set('Origin', origin)
+  .send({ identifier: accounts.teacher, password })
+  .expect(200);
+const teacherToken = text(teacherLogin, 'data', 'accessToken');
+const work = await request(app)
+  .post('/api/v1/assignments')
+  .auth(teacherToken, { type: 'bearer' })
+  .send({
+    teachingAssignmentId,
+    title: 'Exploring fractions',
+    instructions: 'Complete exercises one to five. Bring your workbook to the next lesson.',
+    dueAt: new Date(Date.now() + 7 * 86400000).toISOString(),
+  })
+  .expect(201);
+await request(app)
+  .post(`/api/v1/assignments/${text(work, 'data', 'id')}/publish`)
+  .auth(teacherToken, { type: 'bearer' })
+  .expect(200);
+const announcement = await request(app)
+  .post('/api/v1/announcements')
+  .auth(teacherToken, { type: 'bearer' })
+  .send({
+    audience: { type: 'CLASS', classLevelId: classLevel.id },
+    title: 'Bring your mathematics workbook',
+    body: 'We will review fractions together at our next lesson.',
+  })
+  .expect(201);
+await request(app)
+  .post(`/api/v1/announcements/${text(announcement, 'data', 'id')}/publish`)
+  .auth(teacherToken, { type: 'bearer' })
+  .expect(200);
+const assessment = await request(app)
+  .post('/api/v1/results/assessment-schemes')
+  .auth(adminToken, { type: 'bearer' })
+  .send({
+    academicSessionId,
+    code: 'STANDARD',
+    name: 'School assessment',
+    components: [{ key: 'exam', label: 'Examination', maximum: '100' }],
+    totalMaximum: '100',
+  })
+  .expect(201);
+await request(app)
+  .post(`/api/v1/results/assessment-schemes/${text(assessment, 'data', 'id')}/activate`)
+  .auth(adminToken, { type: 'bearer' })
+  .expect(200);
+const grading = await request(app)
+  .post('/api/v1/results/grading-schemes')
+  .auth(adminToken, { type: 'bearer' })
+  .send({
+    academicSessionId,
+    code: 'STANDARD',
+    name: 'School grades',
+    bands: [
+      { grade: 'A', minimumPercentage: '70', maximumPercentage: '100' },
+      { grade: 'B', minimumPercentage: '0', maximumPercentage: '69.99' },
+    ],
+  })
+  .expect(201);
+await request(app)
+  .post(`/api/v1/results/grading-schemes/${text(grading, 'data', 'id')}/activate`)
+  .auth(adminToken, { type: 'bearer' })
+  .expect(200);
+
 const server = app.listen(4001, '127.0.0.1', () =>
   process.stdout.write('Isolated browser-test API ready.\n'),
 );

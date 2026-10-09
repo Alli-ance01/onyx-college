@@ -58,7 +58,7 @@
 
 .auth-aside__description {
   max-width: 35ch;
-  color: #617388;
+  color: #52657a;
   font-size: 0.95rem;
   line-height: 1.7;
 }
@@ -364,7 +364,7 @@
   --color-amber-100: #e4f4fc;
   --color-neutral-950: #183747;
   --color-neutral-700: #506977;
-  --color-neutral-500: #607581;
+  --color-neutral-500: #566b78;
   --color-neutral-300: #c9dbe3;
   --color-neutral-200: #e1ebef;
   --color-neutral-100: #f3f7f8;
@@ -643,7 +643,7 @@ button:disabled {
   font-size: 0.82rem;
 }
 .auth-aside__steps li > span:first-child {
-  color: #367594;
+  color: #2e6885;
 }
 .auth-aside__footer {
   color: #47697c;
