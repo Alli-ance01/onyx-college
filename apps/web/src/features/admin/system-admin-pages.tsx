@@ -32,176 +32,308 @@ function errorMessage(error: Error | null): string | undefined {
 export function AdminDashboardPage() {
   const auth = useAuthSession();
   const permissions = new Set(auth.principal?.permissions ?? []);
-  const teachers = useQuery({
-    enabled: permissions.has('teachers.read'),
-    queryFn: () => adminApi.teachers(auth.apiClient),
-    queryKey: [...adminQueryKeys.teachers, 'dashboard'],
-  });
+  const canManageSessions = permissions.has('sessions.manage');
+  const canApproveStudents = permissions.has('students.approve_registration');
+  const canReadTeachers = permissions.has('teachers.read');
+  const canApproveTeachers = permissions.has('teachers.approve');
+  const canReviewResults = permissions.has('results.review');
+  const canApproveResults = permissions.has('results.approve');
+  const canPublishResults = permissions.has('results.publish');
+  const canReadAllResults = permissions.has('results.read_all');
+  const canSeeResults =
+    canReviewResults || canApproveResults || canPublishResults || canReadAllResults;
   const sessions = useQuery({
-    enabled: permissions.has('sessions.manage'),
+    enabled: canManageSessions,
     queryFn: () => adminApi.sessions(auth.apiClient),
     queryKey: [...adminQueryKeys.academic, 'dashboard'],
   });
+  const teacherRegistrations = useQuery({
+    enabled: canApproveTeachers,
+    queryFn: () => adminApi.teacherRegistrations(auth.apiClient),
+    queryKey: [...adminQueryKeys.teachers, 'registrations', 'dashboard'],
+  });
   const batches = useQuery({
-    enabled: permissions.has('results.read_all') || permissions.has('results.review'),
+    enabled: canSeeResults,
     queryFn: () => adminApi.resultBatches(auth.apiClient),
     queryKey: [...adminQueryKeys.resultBatches, 'dashboard'],
   });
   const activeSession = sessions.data?.find((item) => item.status === 'ACTIVE');
-  const pendingTeachers =
-    teachers.data?.filter((item) => item.status === 'PENDING_APPROVAL').length ?? '—';
-  const resultAttention =
-    batches.data?.filter((item) => ['SUBMITTED', 'UNDER_REVIEW', 'APPROVED'].includes(item.status))
-      .length ?? '—';
+  const activeTerm = activeSession?.terms.find((item) => item.status === 'ACTIVE');
+  const pendingTeacherApprovals = teacherRegistrations.data?.filter((item) =>
+    ['SUBMITTED', 'UNDER_REVIEW'].includes(item.status),
+  ).length;
+  const resultAttention = batches.data?.filter((item) => {
+    if (canReadAllResults) return ['SUBMITTED', 'UNDER_REVIEW', 'APPROVED'].includes(item.status);
+    if (item.status === 'SUBMITTED') return canReviewResults;
+    if (item.status === 'UNDER_REVIEW') return canReviewResults || canApproveResults;
+    return item.status === 'APPROVED' && canPublishResults;
+  }).length;
+  const resultsHref = canReviewResults
+    ? '/admin/results/review'
+    : canApproveResults
+      ? '/admin/results/approval'
+      : canPublishResults
+        ? '/admin/results/publishing'
+        : '/admin/results';
+  const resultsActionLabel = canReviewResults
+    ? 'Review results'
+    : canApproveResults
+      ? 'Approve results'
+      : canPublishResults
+        ? 'Publish results'
+        : 'Open result overview';
+  const primaryAction = canApproveStudents
+    ? { label: 'Review applications', to: '/admin/students/registrations' }
+    : canApproveTeachers
+      ? { label: 'Review teacher approvals', to: '/admin/teachers/approvals' }
+      : canSeeResults
+        ? { label: resultsActionLabel, to: resultsHref }
+        : canManageSessions
+          ? { label: 'Manage academic sessions', to: '/admin/academics/sessions' }
+          : undefined;
+  const hasReviewQueues = canApproveStudents || canApproveTeachers || canSeeResults;
+  const hasQuickAccess =
+    permissions.has('students.read') ||
+    canReadTeachers ||
+    canManageSessions ||
+    permissions.has('classes.manage') ||
+    permissions.has('subjects.manage') ||
+    permissions.has('subject_offerings.manage') ||
+    permissions.has('settings.manage');
+  const overviewHasError = sessions.isError || teacherRegistrations.isError || batches.isError;
 
   return (
     <main className="portal-content product-page admin-dashboard">
       <PageHeader
-        description="A summary of the school areas that need attention today."
+        actions={
+          primaryAction === undefined ? undefined : (
+            <Link className="admin-dashboard__primary-action" to={primaryAction.to}>
+              {primaryAction.label} <span aria-hidden="true">→</span>
+            </Link>
+          )
+        }
+        description="Your daily workspace for approvals, academic setup, and school operations."
         eyebrow="Administration"
         title="School overview"
       />
-      {teachers.isError || sessions.isError || batches.isError ? (
+      {overviewHasError ? (
         <ErrorState
-          title="Some overview information is unavailable"
+          title="Some dashboard information is unavailable"
           onRetry={() => {
-            if (teachers.isError) void teachers.refetch();
             if (sessions.isError) void sessions.refetch();
+            if (teacherRegistrations.isError) void teacherRegistrations.refetch();
             if (batches.isError) void batches.refetch();
           }}
         />
       ) : null}
-      <section className="admin-context-bar" aria-label="Current academic context">
-        <div>
-          <span>Current academic session</span>
-          <strong>
-            {!permissions.has('sessions.manage')
-              ? 'Managed by the academic office'
-              : sessions.isPending
-                ? 'Loading…'
-                : sessions.isError
-                  ? 'Unavailable'
-                  : (activeSession?.label ?? 'No active session')}
-          </strong>
-        </div>
-        <div>
-          <span>Current term</span>
-          <strong>
-            {!permissions.has('sessions.manage')
-              ? '—'
-              : sessions.isPending
-                ? 'Loading…'
-                : sessions.isError
-                  ? 'Unavailable'
-                  : (activeSession?.terms.find((item) => item.status === 'ACTIVE')?.name ??
-                    'No active term')}
-          </strong>
-        </div>
-        <div>
-          <span>Workspace</span>
-          <strong>School administration</strong>
-        </div>
-      </section>
-      <section aria-labelledby="admin-overview-title">
-        <div className="admin-section-heading">
-          <div>
-            <p className="eyebrow">At a glance</p>
-            <h2 id="admin-overview-title">Today at Onyx</h2>
-          </div>
-        </div>
-        <div className="metric-grid admin-metric-grid">
-          {permissions.has('teachers.read') ? (
-            <Link className="admin-metric-card" to="/admin/teachers">
-              <span>Teachers</span>
-              <strong>{teachers.data?.length ?? '—'}</strong>
-              <small>View staff directory →</small>
-            </Link>
-          ) : null}
-          {permissions.has('teachers.approve') && permissions.has('teachers.read') ? (
-            <Link
-              className="admin-metric-card admin-metric-card--attention"
-              to="/admin/teachers/approvals"
-            >
-              <span>Pending teacher approvals</span>
-              <strong>{pendingTeachers}</strong>
-              <small>Review requests →</small>
-            </Link>
-          ) : null}
-          {permissions.has('results.read_all') || permissions.has('results.review') ? (
-            <Link className="admin-metric-card" to="/admin/results">
-              <span>Results needing action</span>
-              <strong>{resultAttention}</strong>
-              <small>Open result overview →</small>
-            </Link>
-          ) : null}
-        </div>
-      </section>
-      <IntakeQueue />
-      <section className="admin-dashboard-grid" aria-label="Administrative work queues">
+      <section
+        className="admin-dashboard__top-grid"
+        aria-label="Academic context and daily priorities"
+      >
         <Panel
-          className="admin-queue-panel"
-          description="Open the next queue that needs a decision or review."
-          title="Work queues"
+          className="admin-dashboard__context-panel"
+          description={
+            canManageSessions
+              ? 'The active session and term used across school operations.'
+              : 'The academic office manages the current session and term.'
+          }
+          title="Academic context"
         >
-          <div className="admin-queue-list">
-            {permissions.has('students.approve_registration') ? (
-              <Link to="/admin/students/registrations">
-                <span>
-                  <strong>Registration review</strong>
-                  <small>Review student applications and decisions</small>
-                </span>
-                <span aria-hidden="true">→</span>
+          {canManageSessions ? (
+            <>
+              <dl className="admin-dashboard__context-values" aria-busy={sessions.isPending}>
+                <div>
+                  <dt>Current session</dt>
+                  <dd>
+                    {sessions.isPending
+                      ? 'Loading…'
+                      : sessions.isError
+                        ? 'Unavailable'
+                        : (activeSession?.label ?? 'No active session')}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Current term</dt>
+                  <dd>
+                    {sessions.isPending
+                      ? 'Loading…'
+                      : sessions.isError
+                        ? 'Unavailable'
+                        : (activeTerm?.name ?? 'No active term')}
+                  </dd>
+                </div>
+              </dl>
+              <Link className="admin-dashboard__inline-link" to="/admin/academics/sessions">
+                Manage academic sessions <span aria-hidden="true">→</span>
               </Link>
-            ) : null}
-            {permissions.has('teachers.approve') ? (
-              <Link to="/admin/teachers/approvals">
-                <span>
-                  <strong>Teacher approvals</strong>
-                  <small>Approve or reject pending staff registrations</small>
-                </span>
-                <span aria-hidden="true">→</span>
-              </Link>
-            ) : null}
-            {permissions.has('results.review') ? (
-              <Link to="/admin/results/review">
-                <span>
-                  <strong>Result review</strong>
-                  <small>Review submitted academic results</small>
-                </span>
-                <span aria-hidden="true">→</span>
-              </Link>
-            ) : null}
-            {!permissions.has('students.approve_registration') &&
-            !permissions.has('teachers.approve') &&
-            !permissions.has('results.review') ? (
-              <p className="muted">There are no review queues assigned to this account.</p>
-            ) : null}
-          </div>
+            </>
+          ) : (
+            <p className="admin-dashboard__context-note">
+              You can continue with the queues and records available to your account.
+            </p>
+          )}
         </Panel>
         <Panel
-          className="admin-queue-panel"
-          description="Common administration tasks for this workspace."
-          title="Shortcuts"
+          className="admin-dashboard__orientation-panel"
+          description="Start with decisions that are waiting, then use the links below to reach the records you manage."
+          title="A clear place to start"
         >
-          <div className="admin-shortcut-list">
+          <p>
+            {hasReviewQueues
+              ? 'Queue counts update from the records your permissions allow you to review.'
+              : 'No review queues are assigned to this account. Your available workspace links are below.'}
+          </p>
+        </Panel>
+      </section>
+
+      <section className="admin-dashboard__section" aria-labelledby="admin-attention-title">
+        <div className="admin-dashboard__section-heading">
+          <div>
+            <p className="eyebrow">Daily focus</p>
+            <h2 id="admin-attention-title">Needs your attention</h2>
+          </div>
+          <p>Live items awaiting a decision in the queues available to you.</p>
+        </div>
+        {hasReviewQueues ? (
+          <div
+            className={
+              canApproveStudents && (canApproveTeachers || canSeeResults)
+                ? 'admin-dashboard__attention-grid'
+                : 'admin-dashboard__attention-grid admin-dashboard__attention-grid--single'
+            }
+          >
+            {canApproveStudents ? <IntakeQueue /> : null}
+            {canApproveTeachers || canSeeResults ? (
+              <div className="admin-dashboard__review-stack">
+                {canApproveTeachers ? (
+                  <Link className="admin-dashboard__review-card" to="/admin/teachers/approvals">
+                    <span className="admin-dashboard__review-label">Teacher approvals</span>
+                    <strong aria-live="polite">
+                      {teacherRegistrations.isPending
+                        ? 'Loading…'
+                        : teacherRegistrations.isError
+                          ? 'Unavailable'
+                          : (pendingTeacherApprovals ?? 0)}
+                    </strong>
+                    <span className="admin-dashboard__review-description">
+                      {teacherRegistrations.isPending
+                        ? 'Checking the teacher-registration queue.'
+                        : teacherRegistrations.isError
+                          ? 'The approval queue could not be loaded.'
+                          : pendingTeacherApprovals === 0
+                            ? 'No teacher registrations are waiting for a decision.'
+                            : `${String(pendingTeacherApprovals ?? 0)} teacher registration${pendingTeacherApprovals === 1 ? '' : 's'} waiting for a decision.`}
+                    </span>
+                    <span className="admin-dashboard__review-link">
+                      Open teacher approvals <span aria-hidden="true">→</span>
+                    </span>
+                  </Link>
+                ) : null}
+                {canSeeResults ? (
+                  <Link className="admin-dashboard__review-card" to={resultsHref}>
+                    <span className="admin-dashboard__review-label">Results needing action</span>
+                    <strong aria-live="polite">
+                      {batches.isPending
+                        ? 'Loading…'
+                        : batches.isError
+                          ? 'Unavailable'
+                          : (resultAttention ?? 0)}
+                    </strong>
+                    <span className="admin-dashboard__review-description">
+                      {batches.isPending
+                        ? 'Checking the result workflow.'
+                        : batches.isError
+                          ? 'The result queue could not be loaded.'
+                          : resultAttention === 0
+                            ? 'No result batches are waiting in your review workflow.'
+                            : `${String(resultAttention ?? 0)} result batch${resultAttention === 1 ? '' : 'es'} in a status you can act on.`}
+                    </span>
+                    <span className="admin-dashboard__review-link">
+                      {resultsActionLabel} <span aria-hidden="true">→</span>
+                    </span>
+                  </Link>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          <p className="admin-dashboard__quiet-state" role="status">
+            No review queues are assigned to this account. Use the links below to open the areas
+            available to you.
+          </p>
+        )}
+      </section>
+
+      <section className="admin-dashboard__section" aria-labelledby="admin-quick-access-title">
+        <div className="admin-dashboard__section-heading">
+          <div>
+            <p className="eyebrow">Shortcuts</p>
+            <h2 id="admin-quick-access-title">Explore your workspace</h2>
+          </div>
+          <p>Go directly to records and settings you are allowed to manage.</p>
+        </div>
+        {hasQuickAccess ? (
+          <div className="admin-dashboard__quick-links">
             {permissions.has('students.read') ? (
-              <Link to="/admin/students">Student directory</Link>
+              <Link className="admin-dashboard__quick-link" to="/admin/students">
+                <strong>Student directory</strong>
+                <span>Find student profiles and academic history.</span>
+                <span aria-hidden="true">→</span>
+              </Link>
             ) : null}
-            {permissions.has('teachers.read') ? (
-              <Link to="/admin/teachers">Teacher directory</Link>
+            {canReadTeachers ? (
+              <Link className="admin-dashboard__quick-link" to="/admin/teachers">
+                <strong>Teacher directory</strong>
+                <span>Open staff profiles and assignment records.</span>
+                <span aria-hidden="true">→</span>
+              </Link>
             ) : null}
-            {permissions.has('sessions.manage') ? (
-              <Link to="/admin/academics/sessions">Academic sessions</Link>
+            {canManageSessions ? (
+              <Link className="admin-dashboard__quick-link" to="/admin/academics/sessions">
+                <strong>Academic sessions</strong>
+                <span>Review sessions, terms, and their active status.</span>
+                <span aria-hidden="true">→</span>
+              </Link>
+            ) : null}
+            {permissions.has('classes.manage') ? (
+              <Link className="admin-dashboard__quick-link" to="/admin/academics/classes">
+                <strong>Class levels</strong>
+                <span>Manage the school’s class structure.</span>
+                <span aria-hidden="true">→</span>
+              </Link>
+            ) : null}
+            {permissions.has('subjects.manage') ? (
+              <Link className="admin-dashboard__quick-link" to="/admin/academics/subjects">
+                <strong>Subjects</strong>
+                <span>Maintain the subject catalogue.</span>
+                <span aria-hidden="true">→</span>
+              </Link>
+            ) : null}
+            {permissions.has('subject_offerings.manage') ? (
+              <Link className="admin-dashboard__quick-link" to="/admin/academics/subject-offerings">
+                <strong>Subject offerings</strong>
+                <span>Set subjects available for each class and session.</span>
+                <span aria-hidden="true">→</span>
+              </Link>
             ) : null}
             {permissions.has('settings.manage') ? (
-              <Link to="/admin/settings">School settings</Link>
+              <Link className="admin-dashboard__quick-link" to="/admin/settings">
+                <strong>School settings</strong>
+                <span>Update school identity and operational preferences.</span>
+                <span aria-hidden="true">→</span>
+              </Link>
             ) : null}
           </div>
-        </Panel>
+        ) : (
+          <p className="admin-dashboard__quiet-state">
+            No quick links are available to this account. Use the navigation menu to continue.
+          </p>
+        )}
       </section>
     </main>
   );
 }
+
 export function AdminAdministratorsPage() {
   const auth = useAuthSession();
   const cache = useQueryClient();
