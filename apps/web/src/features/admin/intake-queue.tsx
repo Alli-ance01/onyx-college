@@ -25,33 +25,55 @@ export function IntakeQueue() {
   if (!allowed) return null;
   return (
     <Panel
-      title="Applications needing a decision"
-      description="Oldest submitted applications first. Open a record to review its documents and placement."
+      className="admin-dashboard__applications-panel"
+      title="Student applications"
+      description="Oldest submissions first, with each record ready for a decision."
     >
       {query.isPending ? (
-        <p role="status">Loading applications…</p>
+        <p className="admin-dashboard__queue-state" role="status">
+          Loading applications…
+        </p>
       ) : query.isError ? (
         <ErrorState title="Application queue unavailable" onRetry={() => void query.refetch()} />
       ) : query.data.length === 0 ? (
-        <p>No applications are waiting for review.</p>
+        <p className="admin-dashboard__queue-state" role="status">
+          You’re all caught up. No applications are waiting for review.
+        </p>
       ) : (
-        <ul className="record-list">
-          {query.data.slice(0, 5).map((item) => (
-            <li key={item.id}>
-              <Link to={`/admin/students/registrations/${item.id}`}>
-                {item.data.personal.firstName} {item.data.personal.surname}
-              </Link>
-              <small>
-                {item.data.academic.requestedClassLevelCode} · {item.status.replaceAll('_', ' ')}
-                {item.submittedAt === undefined
-                  ? ''
-                  : ` · Submitted ${new Date(item.submittedAt).toLocaleDateString('en-NG')}`}
-              </small>
-            </li>
-          ))}
-        </ul>
+        <>
+          <p className="admin-dashboard__queue-count" aria-live="polite">
+            <strong>{query.data.length}</strong>{' '}
+            {query.data.length === 1 ? 'application is' : 'applications are'} waiting for review.
+          </p>
+          <ul className="admin-dashboard__applicant-list">
+            {query.data.slice(0, 5).map((item) => (
+              <li key={item.id}>
+                <Link to={`/admin/students/registrations/${item.id}`}>
+                  <strong>
+                    {item.data.personal.firstName} {item.data.personal.surname}
+                  </strong>
+                  <span>
+                    {item.data.academic.requestedClassLevelCode} ·{' '}
+                    {item.status.replaceAll('_', ' ')}
+                    {item.submittedAt === undefined
+                      ? ''
+                      : ` · Submitted ${new Date(item.submittedAt).toLocaleDateString('en-NG')}`}
+                  </span>
+                  <span aria-hidden="true">→</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+          {query.data.length > 5 ? (
+            <p className="admin-dashboard__queue-note">
+              Showing the oldest 5 of {query.data.length} applications.
+            </p>
+          ) : null}
+        </>
       )}
-      <Link to="/admin/students/registrations">Open registration review</Link>
+      <Link className="admin-dashboard__inline-link" to="/admin/students/registrations">
+        View all applications <span aria-hidden="true">→</span>
+      </Link>
     </Panel>
   );
 }
