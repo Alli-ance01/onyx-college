@@ -344,6 +344,13 @@ export const appRoutes: RouteObject[] = [
             }),
           },
           {
+            path: 'academics/subject-change-requests',
+            lazy: async () => ({
+              Component: (await import('../../features/admin/subject-change-request-page.js'))
+                .AdminSubjectChangeRequestPage,
+            }),
+          },
+          {
             path: 'academics/promotions',
             lazy: async () => ({
               Component: (await import('../../features/admin/promotion-admin-page.js'))

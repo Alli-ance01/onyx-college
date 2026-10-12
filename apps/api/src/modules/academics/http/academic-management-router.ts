@@ -60,6 +60,19 @@ const overrideSchema = z
     subjectId: z.string(),
   })
   .strict();
+const subjectChangeRequestSchema = z
+  .object({
+    action: z.enum(['ADD', 'REMOVE']),
+    reason: z.string().trim().min(5).max(1_000),
+    subjectId: z.string(),
+  })
+  .strict();
+const subjectChangeDecisionSchema = z
+  .object({
+    decision: z.enum(['APPROVE', 'REJECT']),
+    decisionReason: z.string().trim().min(5).max(1_000),
+  })
+  .strict();
 const progressionSchema = z
   .object({
     destinationClassLevelId: z.string().optional(),
@@ -114,6 +127,7 @@ export function createAcademicManagementRouter(dependencies: {
       '/class-levels',
       '/enrollments',
       '/subject-offerings',
+      '/subject-change-requests',
       '/subjects',
       '/tracks',
     ],
@@ -279,6 +293,12 @@ export function createAcademicManagementRouter(dependencies: {
     await requireCurriculumAccess(principal, enrollmentId);
     sendData(response, await subjects.curriculumForEnrollment(enrollmentId));
   });
+  router.get('/enrollments/:enrollmentId/subject-change-options', async (request, response) => {
+    const principal = requireAuthenticatedPrincipal(request);
+    const enrollmentId = objectId(request.params.enrollmentId, 'Enrollment');
+    await requireCurriculumAccess(principal, enrollmentId);
+    sendData(response, await subjects.subjectChangeOptions(enrollmentId));
+  });
   router.put(
     '/enrollments/:enrollmentId/subject-overrides',
     requirePermission('enrollments.manage'),
@@ -295,6 +315,69 @@ export function createAcademicManagementRouter(dependencies: {
           reason: body.reason,
           requestId: request.requestId,
           subjectId: objectId(body.subjectId, 'Subject'),
+        }),
+      );
+    },
+  );
+  router.get(
+    '/subject-change-requests',
+    requirePermission('enrollments.manage'),
+    async (request, response) => {
+      const status = request.query.status;
+      sendData(
+        response,
+        await subjects.listSubjectChangeRequests({
+          ...(status === 'PENDING' || status === 'APPROVED' || status === 'REJECTED'
+            ? { status }
+            : {}),
+        }),
+      );
+    },
+  );
+  router.get('/subject-change-requests/mine', async (request, response) => {
+    const principal = requireAuthenticatedPrincipal(request);
+    if (principal.accountType !== 'STUDENT') throw new AuthorizationError();
+    sendData(
+      response,
+      await subjects.listSubjectChangeRequests({ studentUserId: principal.userId }),
+    );
+  });
+  router.post(
+    '/enrollments/:enrollmentId/subject-change-requests',
+    validateBody(subjectChangeRequestSchema),
+    async (request, response) => {
+      const principal = requireAuthenticatedPrincipal(request);
+      if (principal.accountType !== 'STUDENT') throw new AuthorizationError();
+      const body = subjectChangeRequestSchema.parse(request.body);
+      sendData(
+        response,
+        await subjects.requestSubjectChange({
+          action: body.action,
+          enrollmentId: objectId(request.params.enrollmentId, 'Enrollment'),
+          reason: body.reason,
+          requestId: request.requestId,
+          subjectId: objectId(body.subjectId, 'Subject'),
+          studentUserId: principal.userId,
+        }),
+        201,
+      );
+    },
+  );
+  router.post(
+    '/subject-change-requests/:requestId/decision',
+    requirePermission('enrollments.manage'),
+    validateBody(subjectChangeDecisionSchema),
+    async (request, response) => {
+      const principal = requireAuthenticatedPrincipal(request);
+      const body = subjectChangeDecisionSchema.parse(request.body);
+      sendData(
+        response,
+        await subjects.decideSubjectChangeRequest({
+          actorUserId: principal.userId,
+          decision: body.decision,
+          decisionReason: body.decisionReason,
+          requestId: request.requestId,
+          requestRecordId: objectId(request.params.requestId, 'Subject-change request'),
         }),
       );
     },

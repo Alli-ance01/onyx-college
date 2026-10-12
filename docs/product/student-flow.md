@@ -88,7 +88,7 @@ The student can view and download published assignments, read targeted announcem
 
 These are ownership-based self-service capabilities rather than administrative permissions. Students receive no administrative permission bundle.
 
-The displayed official curriculum includes applicable `REQUIRED` Subject Offerings, removes any administrator-authorized `REMOVE` exception, and includes an `OPTIONAL` offering only when an administrator has created an `ADD` Enrollment Subject Override. The student does not make these selections.
+The displayed official curriculum includes applicable `REQUIRED` Subject Offerings, removes any administrator-authorized `REMOVE` exception, and includes an `OPTIONAL` offering only when an administrator has created an `ADD` Enrollment Subject Override. The student does not directly make these selections. For an active enrollment, the student may request an offered optional subject to be added or an offered required subject to be removed, with a reason. The request remains pending and the curriculum stays unchanged until an administrator approves it; rejection also leaves the curriculum unchanged. Requests are tied to the enrollment's historical session and cannot be submitted for an inactive enrollment.
 
 Published report averages are calculated from eligible non-exempt subject percentages. If class position is enabled, it is shown only after the entire eligible session/term/class/track cohort is complete; there is no incomplete-cohort bypass.
 

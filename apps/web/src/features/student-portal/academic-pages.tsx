@@ -1,6 +1,8 @@
 import type { StudentProfileDto } from '@onyx/contracts';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 
+import { ApiClientError } from '../../lib/api/index.js';
 import { useAuthSession } from '../../lib/auth/use-auth-session.js';
 import {
   DataTable,
@@ -10,6 +12,8 @@ import {
   PageHeader,
   Panel,
   StatusBadge,
+  Button,
+  FormField,
   type DataTableColumn,
 } from '../../shared/ui/index.js';
 import { DocumentViewButton } from '../student-onboarding/document-view-button.js';
@@ -33,6 +37,10 @@ function ProfileQueryState({ query }: { query: ReturnType<typeof useStudentProfi
 
 export function StudentSubjectsPage() {
   const auth = useAuthSession();
+  const cache = useQueryClient();
+  const [reason, setReason] = useState('');
+  const [selectedSubject, setSelectedSubject] = useState('');
+  const [action, setAction] = useState<'ADD' | 'REMOVE'>('ADD');
   const profile = useStudentProfile();
   const currentEnrollment = profile.data?.academicHistory.find((item) => item.status === 'ACTIVE');
   const curriculum = useQuery({
@@ -46,6 +54,37 @@ export function StudentSubjectsPage() {
       return studentPortalApi.curriculum(auth.apiClient, currentEnrollment.id);
     },
   });
+  const options = useQuery({
+    enabled: currentEnrollment !== undefined,
+    queryKey: ['student-portal', 'subject-options', currentEnrollment?.id],
+    queryFn: () => {
+      if (currentEnrollment === undefined) throw new Error('Current enrollment is unavailable.');
+      return studentPortalApi.subjectChangeOptions(auth.apiClient, currentEnrollment.id);
+    },
+  });
+  const requests = useQuery({
+    queryKey: studentPortalQueryKeys.subjectChangeRequests,
+    queryFn: () => studentPortalApi.subjectChangeRequests(auth.apiClient),
+  });
+  const submit = useMutation({
+    mutationFn: () => {
+      if (currentEnrollment === undefined) throw new Error('Current enrollment is unavailable.');
+      return studentPortalApi.requestSubjectChange(auth.apiClient, currentEnrollment.id, {
+        action,
+        reason,
+        subjectId: selectedSubject,
+      });
+    },
+    onSuccess: async () => {
+      setReason('');
+      setSelectedSubject('');
+      await cache.invalidateQueries({ queryKey: studentPortalQueryKeys.subjectChangeRequests });
+    },
+  });
+  const requestable =
+    options.data?.filter(
+      (item) => item.classification === (action === 'ADD' ? 'OPTIONAL' : 'REQUIRED'),
+    ) ?? [];
 
   return (
     <main className="portal-content product-page student-portal-page">
@@ -104,6 +143,94 @@ export function StudentSubjectsPage() {
           getRowKey={(row) => row.subject.id}
           rows={curriculum.data}
         />
+      ) : null}
+      {currentEnrollment !== undefined ? (
+        <Panel title="Request a subject change">
+          <p className="student-prose">
+            Choose an offered subject and explain why. The school must approve requests before your
+            curriculum changes.
+          </p>
+          <div className="form-grid form-grid--two">
+            <FormField controlId="subject-change-action" label="Change">
+              <select
+                value={action}
+                onChange={(event) => {
+                  setAction(event.target.value as 'ADD' | 'REMOVE');
+                  setSelectedSubject('');
+                }}
+              >
+                <option value="ADD">Request to add an optional subject</option>
+                <option value="REMOVE">Request to remove a required subject</option>
+              </select>
+            </FormField>
+            <FormField controlId="subject-change-subject" label="Subject">
+              <select
+                required
+                value={selectedSubject}
+                onChange={(event) => {
+                  setSelectedSubject(event.target.value);
+                }}
+              >
+                <option value="">Select an offered subject</option>
+                {requestable.map((item) => (
+                  <option key={item.subject.id} value={item.subject.id}>
+                    {item.subject.name} ({item.subject.code})
+                  </option>
+                ))}
+              </select>
+            </FormField>
+          </div>
+          <FormField controlId="subject-change-reason" label="Reason">
+            <textarea
+              minLength={5}
+              rows={3}
+              value={reason}
+              onChange={(event) => {
+                setReason(event.target.value);
+              }}
+            />
+          </FormField>
+          {submit.error instanceof ApiClientError ? (
+            <p className="form-alert form-alert--error">{submit.error.message}</p>
+          ) : null}
+          <Button
+            disabled={selectedSubject === '' || reason.trim().length < 5}
+            loading={submit.isPending}
+            onClick={() => {
+              submit.mutate();
+            }}
+            type="button"
+          >
+            Submit request
+          </Button>
+        </Panel>
+      ) : null}
+      {requests.isSuccess ? (
+        <Panel title="Subject-change requests">
+          {requests.data.length === 0 ? (
+            <p className="student-prose">No subject-change requests.</p>
+          ) : (
+            requests.data.map((item) => (
+              <p key={item.id}>
+                <strong>
+                  {item.action} {item.subject.name}
+                </strong>{' '}
+                —{' '}
+                <StatusBadge
+                  tone={
+                    item.status === 'APPROVED'
+                      ? 'success'
+                      : item.status === 'REJECTED'
+                        ? 'danger'
+                        : 'warning'
+                  }
+                >
+                  {item.status}
+                </StatusBadge>
+              </p>
+            ))
+          )}
+        </Panel>
       ) : null}
     </main>
   );

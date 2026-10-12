@@ -34,6 +34,7 @@ const expectedModelNames = [
   'StudentMedicalProfile',
   'StudentRegistration',
   'Subject',
+  'SubjectChangeRequest',
   'SubjectOffering',
   'Teacher',
   'TeacherInvitation',

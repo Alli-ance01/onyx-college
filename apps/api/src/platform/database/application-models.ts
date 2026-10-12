@@ -48,6 +48,7 @@ import {
   SubjectModel,
   SubjectOfferingModel,
 } from '../../modules/subjects/infrastructure/subject-models.js';
+import { SubjectChangeRequestModel } from '../../modules/subjects/infrastructure/subject-change-request-model.js';
 import {
   OutboxEventModel,
   SequenceCounterModel,
@@ -106,6 +107,7 @@ export const applicationModels: readonly IndexableApplicationModel[] = [
   StudentMedicalProfileModel,
   StudentModel,
   StudentRegistrationModel,
+  SubjectChangeRequestModel,
   SubjectModel,
   SubjectOfferingModel,
   TeacherInvitationModel,

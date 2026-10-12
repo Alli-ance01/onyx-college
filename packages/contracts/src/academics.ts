@@ -99,4 +99,18 @@ export interface EnrollmentSubjectOverrideDto {
   subject: Pick<SubjectDto, 'code' | 'id' | 'name'>;
 }
 
+export interface SubjectChangeRequestDto {
+  action: 'ADD' | 'REMOVE';
+  createdAt: string;
+  decisionReason?: string;
+  decidedAt?: string;
+  enrollment: Pick<EnrollmentDto, 'id' | 'academicSession' | 'classLevel' | 'student'> & {
+    track?: Pick<TrackDto, 'code' | 'id' | 'name'>;
+  };
+  id: string;
+  reason: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  subject: Pick<SubjectDto, 'code' | 'id' | 'name'>;
+}
+
 export type ProgressionOutcome = 'GRADUATE' | 'PROMOTE' | 'REPEAT' | 'TRANSFER' | 'WITHDRAW';
