@@ -82,7 +82,7 @@ Offering rules:
 - applicable `REQUIRED` offerings automatically form the Enrollment's standard curriculum; and
 - an `OPTIONAL` offering is not part of an individual Enrollment until explicitly added.
 
-Students do not choose their official curriculum in V1. An authorized administrator uses `EnrollmentSubjectOverride` with `ADD` to assign an applicable `OPTIONAL` offering to one Enrollment, or `REMOVE` for an exceptional removal from the required standard curriculum. Every override records reason, actor, timestamp, and audit event. Overrides reference an Enrollment so their historical session and placement context cannot drift.
+Students do not directly change their official curriculum in V1. They may submit one pending subject-change request for their own active Enrollment: `ADD` for an applicable `OPTIONAL` offering or `REMOVE` for an applicable `REQUIRED` offering. The request records the student's reason and does not change curriculum while pending. An authorized administrator with `enrollments.manage` may approve or reject it; approval atomically creates the `EnrollmentSubjectOverride` and both the decision and override are audited. Requests remain tied to their historical Enrollment, cannot be submitted for completed, withdrawn, transferred, graduated, or archived enrollments, and a rejected or approved request does not silently alter the curriculum.
 
 ## 6. Teacher academic scope
 

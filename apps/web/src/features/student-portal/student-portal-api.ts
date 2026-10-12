@@ -5,6 +5,8 @@ import type {
   CurriculumSubjectDto,
   NotificationDto,
   StudentProfileDto,
+  SubjectChangeRequestDto,
+  SubjectOfferingDto,
   SuccessEnvelope,
   TermReportDto,
 } from '@onyx/contracts';
@@ -19,6 +21,7 @@ export const studentPortalQueryKeys = {
   reports: ['student-portal', 'reports'] as const,
   sessions: ['student-portal', 'account-sessions'] as const,
   curriculum: (enrollmentId: string) => ['student-portal', 'curriculum', enrollmentId] as const,
+  subjectChangeRequests: ['student-portal', 'subject-change-requests'] as const,
   report: (reportId: string) => ['student-portal', 'report', reportId] as const,
 };
 
@@ -35,6 +38,27 @@ export const studentPortalApi = {
   },
   curriculum(client: ApiClient, enrollmentId: string): Promise<readonly CurriculumSubjectDto[]> {
     return data(client.request(`/enrollments/${enrollmentId}/curriculum`));
+  },
+  subjectChangeOptions(
+    client: ApiClient,
+    enrollmentId: string,
+  ): Promise<readonly SubjectOfferingDto[]> {
+    return data(client.request(`/enrollments/${enrollmentId}/subject-change-options`));
+  },
+  subjectChangeRequests(client: ApiClient): Promise<readonly SubjectChangeRequestDto[]> {
+    return data(client.request('/subject-change-requests/mine'));
+  },
+  requestSubjectChange(
+    client: ApiClient,
+    enrollmentId: string,
+    input: { action: 'ADD' | 'REMOVE'; reason: string; subjectId: string },
+  ): Promise<SubjectChangeRequestDto> {
+    return data(
+      client.request(`/enrollments/${enrollmentId}/subject-change-requests`, {
+        body: input,
+        method: 'POST',
+      }),
+    );
   },
   markAllNotificationsRead(client: ApiClient): Promise<{ updated: boolean }> {
     return data(client.request('/notifications/read-all', { method: 'POST' }));

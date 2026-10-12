@@ -10,6 +10,7 @@ import type {
   NotificationDto,
   ResultBatchDto,
   ResultCorrectionRequestDto,
+  SubjectChangeRequestDto,
   SubjectDto,
   SubjectOfferingDto,
   SuccessEnvelope,
@@ -153,6 +154,19 @@ export const adminApi = {
   subjects: (client: ApiClient) => data<readonly SubjectDto[]>(client.request('/subjects')),
   offerings: (client: ApiClient) =>
     data<readonly SubjectOfferingDto[]>(client.request('/subject-offerings')),
+  subjectChangeRequests: (client: ApiClient) =>
+    data<readonly SubjectChangeRequestDto[]>(
+      client.request('/subject-change-requests?status=PENDING'),
+    ),
+  decideSubjectChangeRequest(
+    client: ApiClient,
+    id: string,
+    input: { decision: 'APPROVE' | 'REJECT'; decisionReason: string },
+  ) {
+    return data<SubjectChangeRequestDto>(
+      client.request(`/subject-change-requests/${id}/decision`, { body: input, method: 'POST' }),
+    );
+  },
   enrollments: (client: ApiClient) =>
     data<readonly EnrollmentDto[]>(client.request('/enrollments')),
   createSession(client: ApiClient, label: string) {

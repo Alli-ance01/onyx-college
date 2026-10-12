@@ -38,6 +38,7 @@ Operational summaries and actionable queues, constrained by the administrator's 
 - Senior Tracks
 - Subjects
 - Subject Offerings
+- Subject-change Requests
 - Promotions
 
 ### Academic operations
@@ -74,7 +75,7 @@ Approval atomically creates the Student profile, allocates the permanent non-reu
 
 ## 4. Student administration
 
-Authorized administrators can inspect profiles and historical enrollments, process Profile Correction Requests, manage explicit `ADD`/`REMOVE` Enrollment Subject Overrides, and carry out promotion outcomes. `REQUIRED` offerings enter matching curricula automatically; an `OPTIONAL` offering requires an `ADD` override for an individual Enrollment, while `REMOVE` creates an exception from required curriculum. Every override records reason, actor, timestamp, and audit event. Students do not select official subjects. Administrators do not overwrite historical enrollments.
+Authorized administrators can inspect profiles and historical enrollments, process Profile Correction Requests, review student subject-change requests, manage explicit `ADD`/`REMOVE` Enrollment Subject Overrides, and carry out promotion outcomes. `REQUIRED` offerings enter matching curricula automatically; an `OPTIONAL` offering requires an `ADD` override for an individual Enrollment, while `REMOVE` creates an exception from required curriculum. Students may request only an offered subject for their own active enrollment; requests remain pending until an administrator with `enrollments.manage` approves or rejects them. Approval atomically applies the override, and the request decision and override are audited. Administrators do not overwrite historical enrollments.
 
 Promotion creates the next session's Enrollment. Repeat also creates a new enrollment for the next session. Withdraw, transfer, archive, and graduate preserve earlier history. JSS3-to-SS1 placement requires a senior track; SS3 graduation changes the Student lifecycle to `GRADUATED`.
 

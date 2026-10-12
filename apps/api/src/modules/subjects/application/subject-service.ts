@@ -1,6 +1,7 @@
 import type {
   CurriculumSubjectDto,
   EnrollmentSubjectOverrideDto,
+  SubjectChangeRequestDto,
   SubjectDto,
   SubjectOfferingDto,
 } from '@onyx/contracts';
@@ -14,11 +15,16 @@ import {
 } from '../../academics/infrastructure/academic-models.js';
 import { AuditWriter } from '../../audit/application/audit-writer.js';
 import { EnrollmentModel } from '../../enrollments/infrastructure/enrollment-model.js';
+import { StudentModel } from '../../students/infrastructure/student-models.js';
 import {
   EnrollmentSubjectOverrideModel,
   SubjectModel,
   SubjectOfferingModel,
 } from '../infrastructure/subject-models.js';
+import {
+  SubjectChangeRequestModel,
+  type SubjectChangeRequestRecord,
+} from '../infrastructure/subject-change-request-model.js';
 
 function normalizedName(value: string): string {
   return value.trim().replace(/\s+/gu, ' ').toLocaleLowerCase('en-US');
@@ -39,6 +45,79 @@ function subjectDto(subject: {
     status: subject.status,
     version: subject.version,
     ...(subject.description === undefined ? {} : { description: subject.description }),
+  };
+}
+
+type PopulatedSubjectChangeRequest = SubjectChangeRequestRecord & {
+  _id: mongoose.Types.ObjectId;
+  subjectId: { _id: mongoose.Types.ObjectId; code: string; name: string };
+  enrollmentId: {
+    _id: mongoose.Types.ObjectId;
+    academicSessionId: { _id: mongoose.Types.ObjectId; label: string };
+    classLevelId: {
+      _id: mongoose.Types.ObjectId;
+      code: string;
+      name: string;
+      stage: 'JUNIOR' | 'SENIOR';
+    };
+    studentId: {
+      _id: mongoose.Types.ObjectId;
+      firstName: string;
+      middleName?: string;
+      surname: string;
+      studentId: string;
+    };
+    trackId?: { _id: mongoose.Types.ObjectId; code: string; name: string };
+  };
+};
+function subjectChangeRequestDto(item: PopulatedSubjectChangeRequest): SubjectChangeRequestDto {
+  const enrollment = item.enrollmentId;
+  return {
+    action: item.action,
+    createdAt: item.createdAt.toISOString(),
+    enrollment: {
+      academicSession: {
+        id: enrollment.academicSessionId._id.toString(),
+        label: enrollment.academicSessionId.label,
+      },
+      classLevel: {
+        code: enrollment.classLevelId.code,
+        id: enrollment.classLevelId._id.toString(),
+        name: enrollment.classLevelId.name,
+        stage: enrollment.classLevelId.stage,
+      },
+      id: enrollment._id.toString(),
+      student: {
+        id: enrollment.studentId._id.toString(),
+        name: [
+          enrollment.studentId.surname,
+          enrollment.studentId.firstName,
+          enrollment.studentId.middleName,
+        ]
+          .filter(Boolean)
+          .join(' '),
+        studentId: enrollment.studentId.studentId,
+      },
+      ...(enrollment.trackId === undefined
+        ? {}
+        : {
+            track: {
+              code: enrollment.trackId.code,
+              id: enrollment.trackId._id.toString(),
+              name: enrollment.trackId.name,
+            },
+          }),
+    },
+    id: item._id.toString(),
+    reason: item.reason,
+    status: item.status,
+    subject: {
+      code: item.subjectId.code,
+      id: item.subjectId._id.toString(),
+      name: item.subjectId.name,
+    },
+    ...(item.decisionReason === undefined ? {} : { decisionReason: item.decisionReason }),
+    ...(item.decidedAt === undefined ? {} : { decidedAt: item.decidedAt.toISOString() }),
   };
 }
 
@@ -261,6 +340,199 @@ export class SubjectService {
           ...(action === undefined ? {} : { overrideAction: action }),
         };
       });
+  }
+
+  public async subjectChangeOptions(enrollmentId: string): Promise<SubjectOfferingDto[]> {
+    const enrollment = await EnrollmentModel.findById(enrollmentId).lean();
+    if (enrollment === null) throw new NotFoundError();
+    return this.listOfferings({
+      academicSessionId: enrollment.academicSessionId.toString(),
+      classLevelId: enrollment.classLevelId.toString(),
+      ...(enrollment.trackId === undefined ? {} : { trackId: enrollment.trackId.toString() }),
+    });
+  }
+
+  public async listSubjectChangeRequests(input: {
+    studentUserId?: string;
+    status?: 'PENDING' | 'APPROVED' | 'REJECTED';
+  }): Promise<SubjectChangeRequestDto[]> {
+    const query: Record<string, unknown> =
+      input.status === undefined ? {} : { status: input.status };
+    if (input.studentUserId !== undefined) {
+      const student = await StudentModel.findOne({ userId: input.studentUserId }).lean();
+      if (student === null) return [];
+      const enrollments = await EnrollmentModel.find({ studentId: student._id })
+        .select('_id')
+        .lean();
+      query.enrollmentId = { $in: enrollments.map(({ _id }) => _id) };
+    }
+    const records = await SubjectChangeRequestModel.find(query)
+      .populate({ path: 'subjectId', select: 'code name' })
+      .populate({
+        path: 'enrollmentId',
+        populate: [
+          { path: 'academicSessionId', select: 'label' },
+          { path: 'classLevelId', select: 'code name stage' },
+          { path: 'studentId', select: 'firstName middleName surname studentId' },
+          { path: 'trackId', select: 'code name' },
+        ],
+      })
+      .sort({ createdAt: -1 })
+      .lean();
+    return records.map((item) =>
+      subjectChangeRequestDto(item as unknown as PopulatedSubjectChangeRequest),
+    );
+  }
+
+  public async requestSubjectChange(input: {
+    action: 'ADD' | 'REMOVE';
+    enrollmentId: string;
+    reason: string;
+    requestId: string;
+    subjectId: string;
+    studentUserId: string;
+  }): Promise<SubjectChangeRequestDto> {
+    const [student, enrollment, subject] = await Promise.all([
+      StudentModel.findOne({ userId: input.studentUserId }).lean(),
+      EnrollmentModel.findById(input.enrollmentId).lean(),
+      SubjectModel.findById(input.subjectId).lean(),
+    ]);
+    if (student === null || enrollment === null || subject === null) throw new NotFoundError();
+    if (enrollment.studentId.toString() !== student._id.toString()) throw new NotFoundError();
+    if (enrollment.status !== 'ACTIVE')
+      throw new ConflictError('Only an active enrollment can be changed.');
+    const offering = await SubjectOfferingModel.findOne({
+      academicSessionId: enrollment.academicSessionId,
+      classLevelId: enrollment.classLevelId,
+      normalizedTrackKey: enrollment.trackId?.toString() ?? 'NONE',
+      status: { $in: ['ACTIVE', 'PLANNED'] },
+      subjectId: subject._id,
+    }).lean();
+    if (offering === null)
+      throw new ConflictError('The subject is not offered for this placement.');
+    if (input.action === 'ADD' && offering.classification !== 'OPTIONAL')
+      throw new ConflictError('ADD requests are only valid for optional subjects.');
+    if (input.action === 'REMOVE' && offering.classification !== 'REQUIRED')
+      throw new ConflictError('REMOVE requests are only valid for required subjects.');
+    const existingOverride = await EnrollmentSubjectOverrideModel.findOne({
+      enrollmentId: enrollment._id,
+      subjectId: subject._id,
+      status: 'ACTIVE',
+    }).lean();
+    if (existingOverride !== null)
+      throw new ConflictError('This subject already has an administrator decision.');
+    try {
+      const created = await SubjectChangeRequestModel.create({
+        action: input.action,
+        enrollmentId: enrollment._id,
+        reason: input.reason,
+        requestedByUserId: student.userId,
+        status: 'PENDING',
+        subjectId: subject._id,
+      });
+      await this.#audit.append({
+        action: 'SUBJECT_CHANGE_REQUEST_SUBMITTED',
+        actorType: 'USER',
+        actorUserId: student.userId,
+        changes: { action: input.action },
+        outcome: 'SUCCESS',
+        reason: input.reason,
+        requestId: input.requestId,
+        targetId: created._id.toString(),
+        targetType: 'SubjectChangeRequest',
+      });
+      const result = await this.listSubjectChangeRequests({ studentUserId: input.studentUserId });
+      const dto = result.find(({ id }) => id === created._id.toString());
+      if (dto === undefined) throw new Error('Subject-change request could not be reloaded.');
+      return dto;
+    } catch (error) {
+      if (error instanceof Error && error.name === 'MongoServerError')
+        throw new ConflictError('A pending request already exists for this subject.');
+      throw error;
+    }
+  }
+
+  public async decideSubjectChangeRequest(input: {
+    decision: 'APPROVE' | 'REJECT';
+    decisionReason: string;
+    requestId: string;
+    requestRecordId: string;
+    actorUserId: string;
+  }): Promise<SubjectChangeRequestDto> {
+    const request = await SubjectChangeRequestModel.findById(input.requestRecordId).lean();
+    if (request === null) throw new NotFoundError();
+    if (request.status !== 'PENDING')
+      throw new ConflictError('This request has already been decided.');
+    const enrollment = await EnrollmentModel.findById(request.enrollmentId).lean();
+    const subject = await SubjectModel.findById(request.subjectId).lean();
+    if (enrollment === null || subject === null) throw new NotFoundError();
+    const actorId = new mongoose.Types.ObjectId(input.actorUserId);
+    await mongoose.connection.transaction(async (session) => {
+      const updated = await SubjectChangeRequestModel.updateOne(
+        { _id: request._id, status: 'PENDING' },
+        {
+          $set: {
+            status: input.decision === 'APPROVE' ? 'APPROVED' : 'REJECTED',
+            decisionReason: input.decisionReason,
+            decidedAt: new Date(),
+            decidedByUserId: actorId,
+          },
+        },
+        { session },
+      );
+      if (updated.modifiedCount !== 1)
+        throw new ConflictError('The request changed before it was decided.');
+      if (input.decision === 'APPROVE') {
+        const override = await EnrollmentSubjectOverrideModel.findOneAndUpdate(
+          { enrollmentId: enrollment._id, subjectId: subject._id },
+          {
+            $set: {
+              action: request.action,
+              actorUserId: actorId,
+              auditCorrelationId: input.requestId,
+              reason: request.reason,
+              status: 'ACTIVE',
+            },
+            $unset: { revokedAt: 1, revokedByUserId: 1 },
+          },
+          { new: true, upsert: true, session },
+        );
+        await this.#audit.append(
+          {
+            action: 'ENROLLMENT_SUBJECT_OVERRIDE_SET',
+            actorType: 'USER',
+            actorUserId: actorId,
+            changes: { action: request.action, sourceRequestId: request._id.toString() },
+            outcome: 'SUCCESS',
+            reason: input.decisionReason,
+            requestId: input.requestId,
+            targetId: override._id.toString(),
+            targetType: 'EnrollmentSubjectOverride',
+          },
+          session,
+        );
+      }
+      await this.#audit.append(
+        {
+          action: `SUBJECT_CHANGE_REQUEST_${input.decision}D`,
+          actorType: 'USER',
+          actorUserId: actorId,
+          changes: { decision: input.decision },
+          outcome: 'SUCCESS',
+          reason: input.decisionReason,
+          requestId: input.requestId,
+          targetId: request._id.toString(),
+          targetType: 'SubjectChangeRequest',
+        },
+        session,
+      );
+    });
+    const result = await this.listSubjectChangeRequests({
+      status: input.decision === 'APPROVE' ? 'APPROVED' : 'REJECTED',
+    });
+    const dto = result.find(({ id }) => id === input.requestRecordId);
+    if (dto === undefined) throw new Error('Subject-change request could not be reloaded.');
+    return dto;
   }
 
   public async setOverride(input: {
