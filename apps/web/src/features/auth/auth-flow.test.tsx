@@ -110,6 +110,70 @@ describe('browser authentication lifecycle', () => {
     expect(await screen.findByRole('heading', { name: 'School overview' })).toBeVisible();
   });
 
+  it('routes an unapproved applicant to onboarding and lets them sign out', async () => {
+    const applicant = {
+      ...principal,
+      accountType: 'APPLICANT' as const,
+      permissions: [] as string[],
+      portal: 'ONBOARDING' as const,
+      roles: [] as string[],
+    };
+    const fetchMock = vi.fn<typeof fetch>((input) => {
+      const url = input instanceof Request ? input.url : String(input);
+      const pathname = new URL(url, 'http://localhost').pathname;
+      if (pathname.endsWith('/auth/csrf')) {
+        return Promise.resolve(
+          jsonResponse(
+            { error: { code: 'AUTHENTICATION_REQUIRED', message: 'Sign in', requestId: 'test' } },
+            401,
+          ),
+        );
+      }
+      if (pathname.endsWith('/auth/login')) {
+        return Promise.resolve(
+          jsonResponse({
+            data: {
+              accessToken: 'applicant-access-token',
+              csrfToken: 'applicant-csrf-token',
+              expiresInSeconds: 600,
+              principal: applicant,
+            },
+          }),
+        );
+      }
+      if (pathname.endsWith('/auth/logout'))
+        return Promise.resolve(new Response(null, { status: 204 }));
+      return Promise.resolve(
+        jsonResponse(
+          { error: { code: 'NOT_FOUND', message: 'Missing fixture', requestId: 'test' } },
+          404,
+        ),
+      );
+    });
+    const router = renderApp('/auth/login', fetchMock);
+
+    fireEvent.change(await screen.findByLabelText('Username, email, or phone'), {
+      target: { value: 'applicant.one' },
+    });
+    fireEvent.change(screen.getByLabelText(/^Password/u), {
+      target: { value: 'a-secure-password' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+
+    expect(await screen.findByRole('link', { name: 'Your application' })).toBeVisible();
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/onboarding');
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Sign out' }));
+
+    expect(await screen.findByRole('heading', { name: 'Sign in to Onyx.' })).toBeVisible();
+    expect(router.state.location.pathname).toBe('/auth/login');
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/auth/logout'),
+      expect.objectContaining({ method: 'POST' }),
+    );
+  });
+
   it('restores a refresh-cookie session and enters its role-aware shell', async () => {
     const fetchMock = vi
       .fn<typeof fetch>()

@@ -2,8 +2,12 @@ import { ConnectionStatus } from '../../shared/ui/connection-status.js';
 import { useEffect } from 'react';
 import { Brand } from '../../shared/ui/brand.js';
 import { NavLink, Outlet, useLocation } from 'react-router';
+import { SignOutButton } from '../../features/auth/sign-out-button.js';
+import { useAuthSession } from '../../lib/auth/use-auth-session.js';
 
 export function PublicLayout() {
+  const auth = useAuthSession();
+  const isApplicant = auth.status === 'authenticated' && auth.principal.portal === 'ONBOARDING';
   const { pathname } = useLocation();
   useEffect(() => {
     const title =
@@ -30,10 +34,16 @@ export function PublicLayout() {
           <NavLink end to="/">
             Home
           </NavLink>
-          <NavLink to="/student-signup">Student application</NavLink>
-          <NavLink className="public-nav__cta" to="/auth/login">
-            Sign in
+          <NavLink to={isApplicant ? '/onboarding' : '/student-signup'}>
+            {isApplicant ? 'Your application' : 'Student application'}
           </NavLink>
+          {isApplicant ? (
+            <SignOutButton />
+          ) : (
+            <NavLink className="public-nav__cta" to="/auth/login">
+              Sign in
+            </NavLink>
+          )}
         </nav>
       </header>
       <ConnectionStatus />

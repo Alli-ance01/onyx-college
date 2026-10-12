@@ -254,6 +254,46 @@ describe('student onboarding integration', () => {
       .expect(404);
   });
 
+  it('lets an unapproved applicant sign out without granting student portal access', async () => {
+    const browser = request.agent(app);
+    await browser
+      .post('/api/v1/student-signups')
+      .set('Origin', origin)
+      .send({
+        username: 'logout.applicant',
+        password: 'secure-student-password',
+        passwordConfirmation: 'secure-student-password',
+      })
+      .expect(201);
+
+    const login = await browser
+      .post('/api/v1/auth/login')
+      .set('Origin', origin)
+      .send({ identifier: 'logout.applicant', password: 'secure-student-password' })
+      .expect(200);
+    const credentials = authentication(login);
+    expect(valueAt(apiData(login), 'principal')).toMatchObject({
+      accountStatus: 'ACTIVE',
+      accountType: 'APPLICANT',
+      portal: 'ONBOARDING',
+      roles: [],
+    });
+
+    await browser
+      .get('/api/v1/students/me/dashboard')
+      .set('Authorization', `Bearer ${credentials.accessToken}`)
+      .expect(404);
+    await browser
+      .post('/api/v1/auth/logout')
+      .set('Origin', origin)
+      .set('X-CSRF-Token', credentials.csrfToken)
+      .expect(204);
+    await browser
+      .get('/api/v1/auth/me')
+      .set('Authorization', `Bearer ${credentials.accessToken}`)
+      .expect(401);
+  });
+
   it('versions replacements, coordinates removal, and prevents document IDOR access', async () => {
     const registrationResponse = await request(app)
       .get('/api/v1/student-registrations/me')
