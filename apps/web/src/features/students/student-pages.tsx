@@ -8,6 +8,7 @@ import { Link } from 'react-router';
 import { ApiClientError } from '../../lib/api/api-client.js';
 import { useAuthSession } from '../../lib/auth/use-auth-session.js';
 import { ErrorState } from '../../shared/ui/async-state.js';
+import { StatusBadge } from '../../shared/ui/index.js';
 import { DocumentViewButton } from '../student-onboarding/document-view-button.js';
 
 function initials(name: string): string {
@@ -47,7 +48,7 @@ export function StudentDashboardPage() {
             progress.
           </p>
         </div>
-        <span className="status-badge status-badge--success">{student.lifecycleStatus}</span>
+        <StatusBadge status={student.lifecycleStatus} />
       </header>
       <section className="identity-panel surface">
         <div className="avatar" aria-hidden="true">
@@ -205,7 +206,7 @@ export function StudentProfilePage() {
                 profile.correctionRequests.map((item) => (
                   <div key={item.id}>
                     <strong>{item.field}</strong>
-                    <span>{item.status.replaceAll('_', ' ')}</span>
+                    <StatusBadge status={item.status} />
                     <p>{item.requestedValue}</p>
                   </div>
                 ))
@@ -246,7 +247,7 @@ export function StudentProfilePage() {
             {profile.academicHistory.map((item) => (
               <div key={item.id}>
                 <strong>{item.session.label}</strong>
-                <span>{item.status}</span>
+                <StatusBadge status={item.status} />
                 <p>
                   {item.classLevel.name}
                   {item.track === undefined ? '' : ` · ${item.track.name}`}
@@ -260,7 +261,7 @@ export function StudentProfilePage() {
             {profile.documents.map((document) => (
               <div key={document.id}>
                 <strong>{document.displayName}</strong>
-                <span>{document.reviewStatus.replaceAll('_', ' ')}</span>
+                <StatusBadge status={document.reviewStatus} />
                 <p>
                   Version {document.version} · {(document.sizeBytes / 1024).toFixed(0)} KB
                 </p>

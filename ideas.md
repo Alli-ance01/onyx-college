@@ -2,7 +2,7 @@
 
 ## Design movement
 
-**Editorial academic utility**: a composed school portal that feels like a trusted institution, not a generic SaaS dashboard. The interface pairs quiet ink/navy surfaces with a warm ochre signal color, generous paper-like spacing, and crisp functional typography.
+**Editorial academic journal**: a composed school portal that feels like a trusted institution, not a generic SaaS dashboard. Per the 8 October 2026 direction, the interface pairs sky-blue margins and accents (`#78c2e5`) with deep ink typography (`#183747`), chalk/paper surfaces (`#f3f7f8`), and crisp typography.
 
 ## Core principles
 
@@ -14,10 +14,10 @@
 
 ## Color philosophy
 
-- Deep ink `#0b1728` anchors trust and navigation.
-- Warm ochre `#d6a24d` marks progress, primary actions, and the school’s point of view.
-- Chalk `#f5f7fa` keeps workspaces bright and legible.
-- Sage and terracotta are reserved for positive and cautionary feedback.
+- Deep ink `#183747` anchors trust, primary actions, and typography.
+- Sky blue `#78c2e5` marks progress, active navigation, and the school’s signature identity.
+- Chalk and paper tones (`#f3f7f8` to `#ffffff`) keep workspaces bright and legible.
+- Semantic status colors (forest green, warm amber, crimson, steel blue) are reserved for system states.
 
 ## Layout paradigm
 
@@ -53,4 +53,4 @@ Retain the existing Onyx College wordmark and amber O mark; refine its presentat
 
 ## Signature brand color
 
-Warm ochre `#d6a24d`.
+Sky blue `#78c2e5` paired with deep ink `#183747`.

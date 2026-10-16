@@ -6,11 +6,13 @@ import { RequireAuthentication } from '../../features/auth/route-guards.js';
 import {
   AdminAcademicSetupPage,
   AdminCorrectionQueuePage,
-  AdminRegistrationQueuePage,
-  AdminRegistrationReviewPage,
   AdminStudentDirectoryPage,
   AdminStudentProfilePage,
 } from '../../features/admin/student-admin-pages.js';
+import {
+  AdminRegistrationQueuePage,
+  AdminRegistrationReviewPage,
+} from '../../features/admin/registration-review-pages.js';
 import {
   AdminReferenceStructurePage,
   AdminSessionsPage,

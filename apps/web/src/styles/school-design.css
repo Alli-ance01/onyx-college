@@ -251,7 +251,7 @@
 .admin-dashboard__review-card:focus-visible,
 .admin-dashboard__quick-link:focus-visible,
 .admin-dashboard__applicant-list a:focus-visible {
-  outline: 3px solid #e4a944;
+  outline: 3px solid var(--focus-ring-color, #2682af);
   outline-offset: 3px;
 }
 
@@ -570,7 +570,21 @@
   --color-ink: #183747;
   --color-ink-soft: #315467;
   --color-line: #d7e4e9;
-  --color-ochre: #a5daf2;
+  --color-sky-950: #15384a;
+  --color-sky-900: #1c4d65;
+  --color-sky-800: #20617e;
+  --color-sky-700: #246583;
+  --color-sky-600: #2682af;
+  --color-sky-500: #78c2e5;
+  --color-sky-200: #a5daf2;
+  --color-sky-100: #e4f4fc;
+  --color-sky-50: #f4f9fc;
+  --focus-ring-color: #2682af;
+  --focus-ring: 3px solid var(--focus-ring-color);
+  --focus-ring-offset: 3px;
+
+  /* Legacy re-map aliases preserved for compatibility */
+  --color-ochre: var(--color-sky-200);
   --color-navy-950: #15384a;
   --color-navy-900: #1c4d65;
   --color-navy-800: #20617e;

@@ -198,7 +198,7 @@ function AssignmentScopePage({ mode }: { mode: 'classes' | 'subjects' }) {
           {
             header: 'Status',
             id: 'status',
-            render: (row) => <StatusBadge tone="success">{row.status}</StatusBadge>,
+            render: (row) => <StatusBadge status={row.status} />,
           },
         ]}
         getRowKey={(row) => row.id}
@@ -255,11 +255,7 @@ export function TeacherStudentsPage() {
           {
             header: 'Status',
             id: 'status',
-            render: (row) => (
-              <StatusBadge tone={row.status === 'ACTIVE' ? 'success' : 'neutral'}>
-                {row.status}
-              </StatusBadge>
-            ),
+            render: (row) => <StatusBadge status={row.status} />,
           },
         ]}
         getRowKey={(row) => row.id}
@@ -292,9 +288,7 @@ export function TeacherProfilePage() {
             <div>
               <dt>Status</dt>
               <dd>
-                <StatusBadge tone={teacher.status === 'ACTIVE' ? 'success' : 'warning'}>
-                  {teacher.status}
-                </StatusBadge>
+                <StatusBadge status={teacher.status} />
               </dd>
             </div>
             <div>

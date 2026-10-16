@@ -13,7 +13,7 @@ import { Link, useLocation, useParams, useSearchParams } from 'react-router';
 
 import { ApiClientError } from '../../lib/api/api-client.js';
 import { useAuthSession } from '../../lib/auth/use-auth-session.js';
-import { DataTable, ErrorState } from '../../shared/ui/index.js';
+import { DataTable, ErrorState, StatusBadge } from '../../shared/ui/index.js';
 import { DocumentViewButton } from '../student-onboarding/document-view-button.js';
 
 const registrationFilters = [
@@ -130,7 +130,7 @@ export function AdminRegistrationQueuePage() {
                   {registration.data.academic.requestedTrackCode ?? ''}
                 </td>
                 <td data-label="Status">
-                  <span className="status-badge">{registration.status.replaceAll('_', ' ')}</span>
+                  <StatusBadge status={registration.status} />
                 </td>
                 <td data-label="Duplicate review">
                   {registration.duplicateReview.requiresReview ? (
@@ -243,7 +243,7 @@ export function AdminRegistrationReviewPage() {
           </h1>
           <p>Application {registration.id}</p>
         </div>
-        <span className="status-badge">{registration.status.replaceAll('_', ' ')}</span>
+        <StatusBadge status={registration.status} />
       </header>
       {registration.duplicateReview.requiresReview ? (
         <div className="form-alert">
@@ -584,7 +584,7 @@ export function AdminAcademicSetupPage() {
           </>
         ) : (
           <>
-            <span className="status-badge status-badge--success">Active</span>
+            <StatusBadge status="ACTIVE" />
             <h2>{query.data.activeSession.label}</h2>
             <p>{query.data.activeTerm?.name ?? 'No active term'}</p>
           </>

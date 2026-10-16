@@ -13,6 +13,7 @@ import { useNavigate } from 'react-router';
 
 import { ApiClientError } from '../../lib/api/api-client.js';
 import { useAuthSession } from '../../lib/auth/use-auth-session.js';
+import { Button, StatusBadge } from '../../shared/ui/index.js';
 import { ErrorState } from '../../shared/ui/async-state.js';
 import { DocumentViewButton } from './document-view-button.js';
 
@@ -130,26 +131,25 @@ function StatusView({ registration }: { registration: RegistrationDto }) {
   if (registration.status === 'APPROVED')
     return (
       <section className="onboarding-status surface">
-        <span className="status-badge status-badge--success">Approved</span>
+        <StatusBadge status="APPROVED" />
         <h1>Welcome to Onyx College</h1>
         <p>
           Your institutional profile is ready. Refresh your secure session to enter the Student
           Portal.
         </p>
-        <button
-          className="primary-button"
+        <Button
           onClick={() =>
             void auth.refreshSession().then(() => navigate('/student/dashboard', { replace: true }))
           }
         >
           Enter Student Portal
-        </button>
+        </Button>
       </section>
     );
   if (registration.status === 'REJECTED')
     return (
       <section className="onboarding-status surface">
-        <span className="status-badge status-badge--danger">Application closed</span>
+        <StatusBadge status="REJECTED">Application closed</StatusBadge>
         <h1>Your registration was not approved</h1>
         <p>
           {registration.decisionReason ??
@@ -163,9 +163,7 @@ function StatusView({ registration }: { registration: RegistrationDto }) {
     );
   return (
     <section className="onboarding-status surface">
-      <span className="status-badge">
-        {registration.status === 'UNDER_REVIEW' ? 'Under review' : 'Submitted'}
-      </span>
+      <StatusBadge status={registration.status} />
       <h1>Your registration is with the school</h1>
       <p>We will keep this application read-only while it is being reviewed.</p>
       <dl className="summary-list">
@@ -823,32 +821,31 @@ export function RegistrationPage() {
           ) : null}
           <footer className="form-actions">
             {step > 0 ? (
-              <button
-                className="secondary-button"
+              <Button
                 onClick={() => {
                   setStep((current) => current - 1);
                 }}
-                type="button"
+                variant="secondary"
               >
                 Previous
-              </button>
+              </Button>
             ) : (
               <span />
             )}
             {step < steps.length - 1 ? (
-              <button
-                className="primary-button"
-                disabled={saveMutation.isPending || uploadProgress !== undefined}
+              <Button
+                disabled={uploadProgress !== undefined}
+                loading={saveMutation.isPending}
                 type="submit"
+                variant="primary"
               >
                 Save and continue
-              </button>
+              </Button>
             ) : (
-              <button
-                className="primary-button"
-                disabled={
-                  submitMutation.isPending || passport === undefined || uploadProgress !== undefined
-                }
+              <Button
+                disabled={passport === undefined || uploadProgress !== undefined}
+                loading={submitMutation.isPending}
+                loadingLabel="Submitting…"
                 onClick={() => {
                   if (
                     window.confirm(
@@ -857,12 +854,12 @@ export function RegistrationPage() {
                   )
                     submitMutation.mutate();
                 }}
-                type="button"
+                variant="primary"
               >
                 {registration.status === 'CHANGES_REQUESTED'
                   ? 'Resubmit corrections'
                   : 'Submit registration'}
-              </button>
+              </Button>
             )}
           </footer>
         </form>
