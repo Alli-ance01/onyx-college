@@ -13,13 +13,21 @@ export function IntakeQueue() {
       const responses = await Promise.all(
         ['SUBMITTED', 'UNDER_REVIEW'].map((status) =>
           auth.apiClient.request<SuccessEnvelope<RegistrationDto[]>>(
-            `/student-registrations?status=${status}`,
+            `/student-registrations?filter[status]=${status}`,
           ),
         ),
       );
-      return responses
-        .flatMap((response) => response.data)
-        .sort((a, b) => (a.submittedAt ?? '').localeCompare(b.submittedAt ?? ''));
+      const unique = new Map<string, RegistrationDto>();
+      for (const response of responses) {
+        for (const item of response.data) {
+          if (item.status === 'SUBMITTED' || item.status === 'UNDER_REVIEW') {
+            unique.set(item.id, item);
+          }
+        }
+      }
+      return Array.from(unique.values()).sort((a, b) =>
+        (a.submittedAt ?? '').localeCompare(b.submittedAt ?? ''),
+      );
     },
   });
   if (!allowed) return null;

@@ -13,8 +13,12 @@ import { Link, useLocation, useParams, useSearchParams } from 'react-router';
 
 import { ApiClientError } from '../../lib/api/api-client.js';
 import { useAuthSession } from '../../lib/auth/use-auth-session.js';
-import { DataTable, ErrorState, StatusBadge } from '../../shared/ui/index.js';
+import { Button, DataTable, ErrorState, StatusBadge } from '../../shared/ui/index.js';
 import { DocumentViewButton } from '../student-onboarding/document-view-button.js';
+import {
+  EditStudentProfileModal,
+  StudentEnrolledSubjectsPanel,
+} from './student-profile-components.js';
 
 const registrationFilters = [
   'ALL',
@@ -841,6 +845,7 @@ export function AdminStudentDirectoryPage() {
 export function AdminStudentProfilePage() {
   const { studentId = '' } = useParams();
   const auth = useAuthSession();
+  const [editOpen, setEditOpen] = useState(false);
   const query = useQuery({
     queryKey: ['admin-student', studentId],
     queryFn: async () =>
@@ -860,6 +865,10 @@ export function AdminStudentProfilePage() {
     auth.principal?.permissions.some((permission) =>
       ['documents.read', 'documents.review'].includes(permission),
     ) === true;
+  const canUpdate = auth.principal?.permissions.includes('students.update') === true;
+  const canManageEnrollments =
+    auth.principal?.permissions.includes('enrollments.manage') === true;
+
   return (
     <main className="portal-content product-page">
       <header className="page-heading">
@@ -873,6 +882,16 @@ export function AdminStudentProfilePage() {
             {student.studentId} · {student.lifecycleStatus}
           </p>
         </div>
+        {canUpdate ? (
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setEditOpen(true);
+            }}
+          >
+            Edit profile
+          </Button>
+        ) : null}
       </header>
       <div className="admin-profile-grid">
         <ReviewSection title="Biodata" entries={student.biodata} />
@@ -927,6 +946,25 @@ export function AdminStudentProfilePage() {
           )}
         </section>
       </div>
+
+      {student.academicHistory.length > 0 ? (
+        <div style={{ marginTop: '2rem' }}>
+          <StudentEnrolledSubjectsPanel
+            canManage={canManageEnrollments}
+            enrollments={student.academicHistory}
+            studentId={studentId}
+          />
+        </div>
+      ) : null}
+
+      <EditStudentProfileModal
+        isOpen={editOpen}
+        student={student}
+        studentId={studentId}
+        onClose={() => {
+          setEditOpen(false);
+        }}
+      />
     </main>
   );
 }

@@ -83,8 +83,47 @@ const correctionSchema = z
     reason: z.string().trim().min(5).max(1000),
     requestedValue: z.string().trim().min(1).max(500),
   })
-  .strict();
 const correctionDecisionSchema = z.object({ reason: z.string().trim().min(5).max(1000) }).strict();
+const updateStudentProfileSchema = z
+  .object({
+    biodata: z
+      .object({
+        dateOfBirth: z.string().trim().min(1).optional(),
+        firstName: z.string().trim().min(1).optional(),
+        gender: z.string().trim().min(1).optional(),
+        lga: z.string().trim().optional(),
+        middleName: z.string().trim().optional(),
+        nationality: z.string().trim().min(1).optional(),
+        residentialAddress: z.string().trim().min(1).optional(),
+        stateOfOrigin: z.string().trim().optional(),
+        surname: z.string().trim().min(1).optional(),
+      })
+      .strict()
+      .optional(),
+    guardians: z
+      .array(
+        z.object({
+          emergencyContact: z.boolean().optional(),
+          fullName: z.string().trim().min(1),
+          phone: z.string().trim().min(1),
+          primary: z.boolean().optional(),
+          relationship: z.string().trim().min(1),
+        }),
+      )
+      .optional(),
+    medical: z
+      .object({
+        allergies: z.string().trim().optional(),
+        bloodGroup: z.string().trim().optional(),
+        emergencyInstructions: z.string().trim().optional(),
+        genotype: z.string().trim().optional(),
+        medicalConditions: z.string().trim().optional(),
+        medications: z.string().trim().optional(),
+      })
+      .strict()
+      .optional(),
+  })
+  .strict();
 const configurationFieldSchema = z
   .object({
     displayOrder: z.number().int().min(0).max(10_000),
@@ -337,10 +376,14 @@ export function createStudentOnboardingRouter(dependencies: {
     '/student-registrations',
     requirePermission('students.read'),
     async (request, response) => {
-      const status = registrationStatuses.find((item) => item === request.query['filter[status]']);
+      const statusParam = request.query['filter[status]'] ?? request.query.status;
+      const status = registrationStatuses.find((item) => item === statusParam);
       response.json({
         data: await registrations.listAdmin({
-          ...(request.query['filter[duplicateReview]'] === 'true' ? { duplicateReview: true } : {}),
+          ...(request.query['filter[duplicateReview]'] === 'true' ||
+          request.query.duplicateReview === 'true'
+            ? { duplicateReview: true }
+            : {}),
           ...(typeof request.query.q === 'string' ? { q: request.query.q } : {}),
           ...(status === undefined ? {} : { status }),
         }),
@@ -533,6 +576,27 @@ export function createStudentOnboardingRouter(dependencies: {
           principal.accountType === 'TEACHER' ? principal.userId : undefined,
         ),
       });
+    },
+  );
+  router.patch(
+    '/students/:studentId',
+    requirePermission('students.update'),
+    validateBody(updateStudentProfileSchema),
+    async (request, response) => {
+      const principal = requireAuthenticatedPrincipal(request);
+      const studentId = validateObjectId(request.params.studentId, 'Student');
+      const body = updateStudentProfileSchema.parse(request.body);
+      const updated = await students.updateProfileForAdmin({
+        actorUserId: principal.userId,
+        biodata: body.biodata,
+        guardians: body.guardians,
+        medical: principal.permissions.includes('students.read_sensitive')
+          ? body.medical
+          : undefined,
+        requestId: request.requestId,
+        studentId,
+      });
+      response.json({ data: updated });
     },
   );
   router.get(

@@ -132,7 +132,8 @@ function createFetchMock(principal = administrator) {
       );
     }
     if (pathname.endsWith('/student-registrations')) {
-      const status = requestUrl.searchParams.get('status');
+      const status =
+        requestUrl.searchParams.get('filter[status]') ?? requestUrl.searchParams.get('status');
       return Promise.resolve(
         jsonResponse({ data: registrations.filter((item) => item.status === status) }),
       );

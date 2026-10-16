@@ -602,4 +602,39 @@ export class SubjectService {
       subject: { code: subject.code, id: subject._id.toString(), name: subject.name },
     };
   }
+
+  public async revokeOverride(input: {
+    actorUserId: string;
+    enrollmentId: string;
+    reason?: string | undefined;
+    requestId: string;
+    subjectId: string;
+  }): Promise<void> {
+    const actorId = new mongoose.Types.ObjectId(input.actorUserId);
+    const enrollmentObjectId = new mongoose.Types.ObjectId(input.enrollmentId);
+    const subjectObjectId = new mongoose.Types.ObjectId(input.subjectId);
+    await mongoose.connection.transaction(async (session) => {
+      const record = await EnrollmentSubjectOverrideModel.findOneAndDelete(
+        { enrollmentId: enrollmentObjectId, subjectId: subjectObjectId },
+        { session },
+      );
+      if (record !== null) {
+        await this.#audit.append(
+          {
+            action: 'ENROLLMENT_SUBJECT_OVERRIDE_REVOKED',
+            actorType: 'USER',
+            actorUserId: actorId,
+            changes: { action: record.action, previousStatus: record.status },
+            outcome: 'SUCCESS',
+            reason: input.reason ?? 'Administrator restored standard curriculum',
+            requestId: input.requestId,
+            targetId: record._id.toString(),
+            targetType: 'EnrollmentSubjectOverride',
+          },
+          session,
+        );
+      }
+    });
+  }
 }
+

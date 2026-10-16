@@ -319,6 +319,21 @@ export function createAcademicManagementRouter(dependencies: {
       );
     },
   );
+  router.delete(
+    '/enrollments/:enrollmentId/subject-overrides/:subjectId',
+    requirePermission('enrollments.manage'),
+    async (request, response) => {
+      const principal = requireAuthenticatedPrincipal(request);
+      await subjects.revokeOverride({
+        actorUserId: principal.userId,
+        enrollmentId: objectId(request.params.enrollmentId, 'Enrollment'),
+        reason: typeof request.query.reason === 'string' ? request.query.reason : undefined,
+        requestId: request.requestId,
+        subjectId: objectId(request.params.subjectId, 'Subject'),
+      });
+      response.status(204).end();
+    },
+  );
   router.get(
     '/subject-change-requests',
     requirePermission('enrollments.manage'),

@@ -534,4 +534,121 @@ export class StudentService {
       ...(students.length <= 25 || last === undefined ? {} : { nextCursor: last._id.toString() }),
     };
   }
+
+  public async updateProfileForAdmin(input: {
+    actorUserId: string;
+    biodata?: Partial<Record<CorrectableField, string | undefined>> | undefined;
+    guardians?:
+      | {
+          emergencyContact?: boolean | undefined;
+          fullName: string;
+          phone: string;
+          primary?: boolean | undefined;
+          relationship: string;
+        }[]
+      | undefined;
+    medical?:
+      | {
+          allergies?: string | undefined;
+          bloodGroup?: string | undefined;
+          emergencyInstructions?: string | undefined;
+          genotype?: string | undefined;
+          medicalConditions?: string | undefined;
+          medications?: string | undefined;
+        }
+      | undefined;
+    requestId: string;
+    studentId: string;
+  }): Promise<StudentProfileDto> {
+    const actorId = new mongoose.Types.ObjectId(input.actorUserId);
+    const student = await StudentModel.findById(input.studentId);
+    if (student === null) throw new NotFoundError();
+
+    const changes: Record<string, unknown> = {};
+
+    await mongoose.connection.transaction(async (session) => {
+      // 1. Update biodata fields
+      if (input.biodata !== undefined) {
+        for (const [key, val] of Object.entries(input.biodata)) {
+          if (val !== undefined && correctableFields.includes(key as CorrectableField)) {
+            const trimmed = val.trim();
+            const current = (student.get(key) as string | undefined) ?? '';
+            if (trimmed !== current) {
+              changes[`biodata.${key}`] = { after: trimmed, before: current };
+              student.set(key, trimmed);
+            }
+          }
+        }
+        await student.save({ session });
+      }
+
+      // 2. Update guardians if provided
+      if (input.guardians !== undefined && input.guardians.length > 0) {
+        for (const g of input.guardians) {
+          const normPhone = g.phone.replace(/\D/gu, '');
+          let guardian = await GuardianModel.findOne({
+            $or: [{ phone: g.phone }, { normalizedPhone: normPhone }],
+          }).session(session);
+          if (guardian === null) {
+            guardian = new GuardianModel({
+              fullName: g.fullName.trim(),
+              normalizedPhone: normPhone,
+              phone: g.phone.trim(),
+            });
+            await guardian.save({ session });
+          } else {
+            guardian.fullName = g.fullName.trim();
+            await guardian.save({ session });
+          }
+
+          await StudentGuardianModel.findOneAndUpdate(
+            { guardianId: guardian._id, studentId: student._id },
+            {
+              $set: {
+                emergencyContact: g.emergencyContact ?? true,
+                primary: g.primary ?? true,
+                relationship: g.relationship.trim(),
+              },
+            },
+            { session, upsert: true },
+          );
+        }
+        changes.guardians = { updatedCount: input.guardians.length };
+      }
+
+      // 3. Update medical profile if provided
+      if (input.medical !== undefined) {
+        const medicalClean: Record<string, string> = {};
+        for (const [key, value] of Object.entries(input.medical)) {
+          if (typeof value === 'string') {
+            medicalClean[key] = value.trim();
+          }
+        }
+        await StudentMedicalProfileModel.findOneAndUpdate(
+          { studentId: student._id },
+          { $set: medicalClean },
+          { session, upsert: true },
+        );
+        changes.medical = medicalClean;
+      }
+
+      // 4. Audit log
+      await this.#audit.append(
+        {
+          action: 'STUDENT_PROFILE_UPDATED',
+          actorType: 'USER',
+          actorUserId: actorId,
+          changes,
+          outcome: 'SUCCESS',
+          reason: 'Administrator updated student profile',
+          requestId: input.requestId,
+          targetId: student._id.toString(),
+          targetType: 'Student',
+        },
+        session,
+      );
+    });
+
+    return this.profileForAdmin(input.studentId, true);
+  }
 }

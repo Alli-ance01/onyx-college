@@ -1,6 +1,7 @@
-import type { SubjectDto, SubjectOfferingDto } from '@onyx/contracts';
+import type { EnrollmentDto, SubjectDto, SubjectOfferingDto } from '@onyx/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type SyntheticEvent } from 'react';
+import { Link } from 'react-router';
 
 import { ApiClientError } from '../../lib/api/index.js';
 import { useAuthSession } from '../../lib/auth/use-auth-session.js';
@@ -14,6 +15,7 @@ import {
   StatusBadge,
 } from '../../shared/ui/index.js';
 import { adminApi, adminQueryKeys } from './admin-api.js';
+import { StudentEnrolledSubjectsPanel } from './student-profile-components.js';
 
 function message(error: Error | null): string | undefined {
   if (error === null) return undefined;
@@ -271,3 +273,312 @@ export function AdminSubjectOfferingsPage() {
     </main>
   );
 }
+
+export function AdminClassSubjectAssignmentPage() {
+  const auth = useAuthSession();
+  const sessions = useQuery({
+    queryFn: () => adminApi.sessions(auth.apiClient),
+    queryKey: [...adminQueryKeys.academic, 'sessions'],
+  });
+  const classes = useQuery({
+    queryFn: () => adminApi.classLevels(auth.apiClient),
+    queryKey: [...adminQueryKeys.academic, 'class-levels'],
+  });
+  const tracks = useQuery({
+    queryFn: () => adminApi.tracks(auth.apiClient),
+    queryKey: [...adminQueryKeys.academic, 'tracks'],
+  });
+
+  const [selectedSession, setSelectedSession] = useState<string>('');
+  const [selectedClass, setSelectedClass] = useState<string>('');
+  const [selectedTrack, setSelectedTrack] = useState<string>('');
+  const [managingEnrollment, setManagingEnrollment] = useState<EnrollmentDto | null>(null);
+
+  const activeSessionId =
+    selectedSession !== ''
+      ? selectedSession
+      : (sessions.data?.find((s) => s.status === 'ACTIVE')?.id ?? sessions.data?.[0]?.id ?? '');
+
+  const effectiveClassId =
+    selectedClass !== '' ? selectedClass : (classes.data?.[0]?.id ?? '');
+
+  const classLevel = classes.data?.find((item) => item.id === effectiveClassId);
+  const isSenior = classLevel?.stage === 'SENIOR';
+
+  const enrollmentsQuery = useQuery({
+    enabled: activeSessionId !== '' && effectiveClassId !== '',
+    queryFn: () =>
+      adminApi.enrollments(auth.apiClient, {
+        academicSessionId: activeSessionId,
+        classLevelId: effectiveClassId,
+        ...(isSenior && selectedTrack !== '' ? { trackId: selectedTrack } : {}),
+      }),
+    queryKey: [
+      ...adminQueryKeys.academic,
+      'enrollments',
+      activeSessionId,
+      effectiveClassId,
+      isSenior ? selectedTrack : '',
+    ],
+  });
+
+  const offeringsQuery = useQuery({
+    enabled: activeSessionId !== '' && effectiveClassId !== '',
+    queryFn: () => adminApi.offerings(auth.apiClient),
+    queryKey: [...adminQueryKeys.academic, 'offerings'],
+  });
+
+  const relevantOfferings =
+    offeringsQuery.data?.filter(
+      (offering) =>
+        offering.academicSession.id === activeSessionId &&
+        offering.classLevel.id === effectiveClassId &&
+        (!isSenior || !selectedTrack || offering.track?.id === selectedTrack),
+    ) ?? [];
+
+  const canManage = auth.principal?.permissions.includes('enrollments.manage') === true;
+
+  return (
+    <main className="portal-content product-page">
+      <PageHeader
+        description="View class cohorts, assign or adjust elective subjects, and manage student curriculum exceptions."
+        eyebrow="Academic Structure"
+        title="Class Subject Assignments"
+      />
+
+      <Panel title="Filter class cohort">
+        <div className="form-grid form-grid--three">
+          <FormField controlId="filter-session" label="Academic session">
+            <select
+              id="filter-session"
+              value={activeSessionId}
+              onChange={(e) => {
+                setSelectedSession(e.target.value);
+              }}
+            >
+              {sessions.data?.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.label} {item.status === 'ACTIVE' ? '(Active)' : ''}
+                </option>
+              ))}
+            </select>
+          </FormField>
+
+          <FormField controlId="filter-class" label="Class level">
+            <select
+              id="filter-class"
+              value={effectiveClassId}
+              onChange={(e) => {
+                setSelectedClass(e.target.value);
+                setSelectedTrack('');
+              }}
+            >
+              {classes.data?.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name}
+                </option>
+              ))}
+            </select>
+          </FormField>
+
+          {isSenior ? (
+            <FormField controlId="filter-track" label="Track">
+              <select
+                id="filter-track"
+                value={selectedTrack}
+                onChange={(e) => {
+                  setSelectedTrack(e.target.value);
+                }}
+              >
+                <option value="">All tracks</option>
+                {tracks.data?.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name}
+                  </option>
+                ))}
+              </select>
+            </FormField>
+          ) : null}
+        </div>
+      </Panel>
+
+      {relevantOfferings.length > 0 ? (
+        <Panel title={`Configured offerings for placement (${String(relevantOfferings.length)})`}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+            {relevantOfferings.map((offering) => (
+              <span
+                key={offering.id}
+                style={{
+                  alignItems: 'center',
+                  background: 'var(--color-surface-subtle)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: '4px',
+                  display: 'inline-flex',
+                  fontSize: '0.85rem',
+                  gap: '0.35rem',
+                  padding: '0.35rem 0.65rem',
+                }}
+              >
+                <strong>{offering.subject.name}</strong>
+                <small style={{ color: 'var(--color-text-secondary)' }}>
+                  ({offering.subject.code})
+                </small>
+                <StatusBadge tone={offering.classification === 'REQUIRED' ? 'info' : 'neutral'}>
+                  {offering.classification}
+                </StatusBadge>
+              </span>
+            ))}
+          </div>
+        </Panel>
+      ) : null}
+
+      <DataTable<EnrollmentDto>
+        caption="Enrolled students"
+        columns={[
+          {
+            header: 'Student ID',
+            id: 'studentId',
+            render: (row) => (
+              <Link style={{ fontWeight: 600 }} to={`/admin/students/${row.student.id}`}>
+                {row.student.studentId}
+              </Link>
+            ),
+          },
+          {
+            header: 'Student name',
+            id: 'name',
+            render: (row) => <strong>{row.student.name}</strong>,
+          },
+          {
+            header: 'Placement',
+            id: 'placement',
+            render: (row) =>
+              `${row.classLevel.name}${row.track === undefined ? '' : ` / ${row.track.name}`}`,
+          },
+          {
+            header: 'Status',
+            id: 'status',
+            render: (row) => (
+              <StatusBadge tone={row.status === 'ACTIVE' ? 'success' : 'neutral'}>
+                {row.status}
+              </StatusBadge>
+            ),
+          },
+          {
+            header: 'Actions',
+            id: 'actions',
+            render: (row) => (
+              <div style={{ alignItems: 'center', display: 'flex', gap: '0.5rem' }}>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    setManagingEnrollment(row);
+                  }}
+                >
+                  Manage subjects
+                </Button>
+                <Link
+                  className="ui-button ui-button--secondary"
+                  to={`/admin/students/${row.student.id}`}
+                >
+                  Profile
+                </Link>
+              </div>
+            ),
+          },
+        ]}
+        emptyDescription="There are no active student enrollments for this class level and session."
+        emptyTitle="No enrolled students found"
+        error={enrollmentsQuery.isError}
+        getRowKey={(row) => row.id}
+        loading={enrollmentsQuery.isPending}
+        onRetry={() => void enrollmentsQuery.refetch()}
+        rows={enrollmentsQuery.data ?? []}
+      />
+
+      {managingEnrollment !== null ? (
+        <div
+          aria-modal="true"
+          role="dialog"
+          style={{
+            alignItems: 'center',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            inset: 0,
+            justifyContent: 'center',
+            overflowY: 'auto',
+            padding: '1.5rem',
+            position: 'fixed',
+            zIndex: 1000,
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setManagingEnrollment(null);
+            }
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: 'var(--color-surface, #fff)',
+              borderRadius: '8px',
+              boxShadow: '0 8px 30px rgba(0, 0, 0, 0.15)',
+              maxHeight: '90vh',
+              maxWidth: '900px',
+              overflowY: 'auto',
+              padding: '2rem',
+              width: '100%',
+            }}
+          >
+            <div
+              style={{
+                alignItems: 'flex-start',
+                borderBottom: '1px solid var(--color-border)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                marginBottom: '1.5rem',
+                paddingBottom: '1rem',
+              }}
+            >
+              <div>
+                <h2 style={{ margin: 0 }}>
+                  Subject assignments: {managingEnrollment.student.name}
+                </h2>
+                <p style={{ color: 'var(--color-text-secondary)', margin: '0.25rem 0 0' }}>
+                  Student ID: <strong>{managingEnrollment.student.studentId}</strong> &bull; Placement:{' '}
+                  {managingEnrollment.classLevel.name}
+                  {managingEnrollment.track ? ` / ${managingEnrollment.track.name}` : ''} (
+                  {managingEnrollment.academicSession.label})
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  setManagingEnrollment(null);
+                }}
+              >
+                Close
+              </Button>
+            </div>
+
+            <StudentEnrolledSubjectsPanel
+              canManage={canManage}
+              enrollments={[
+                {
+                  classLevel: managingEnrollment.classLevel,
+                  id: managingEnrollment.id,
+                  session: managingEnrollment.academicSession,
+                  status: managingEnrollment.status,
+                  ...(managingEnrollment.track ? { track: managingEnrollment.track } : {}),
+                },
+              ]}
+              studentId={managingEnrollment.student.id}
+            />
+          </div>
+        </div>
+      ) : null}
+    </main>
+  );
+}
+

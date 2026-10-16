@@ -205,6 +205,12 @@ const adminNavigation: readonly NavigationGroup[] = [
         to: '/admin/academics/subject-offerings',
       },
       {
+        label: 'Subject assignments',
+        permissions: ['enrollments.manage'],
+        shortLabel: 'SA',
+        to: '/admin/academics/subject-assignments',
+      },
+      {
         label: 'Subject-change requests',
         permissions: ['enrollments.manage'],
         shortLabel: 'SCR',

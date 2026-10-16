@@ -167,8 +167,12 @@ export const adminApi = {
       client.request(`/subject-change-requests/${id}/decision`, { body: input, method: 'POST' }),
     );
   },
-  enrollments: (client: ApiClient) =>
-    data<readonly EnrollmentDto[]>(client.request('/enrollments')),
+  enrollments: (client: ApiClient, queryParams?: Record<string, string>) => {
+    const search = queryParams ? new URLSearchParams(queryParams).toString() : '';
+    return data<readonly EnrollmentDto[]>(
+      client.request(`/enrollments${search ? `?${search}` : ''}`),
+    );
+  },
   createSession(client: ApiClient, label: string) {
     return data<AcademicSessionDto>(
       client.request('/academic-sessions', { body: { label }, method: 'POST' }),
