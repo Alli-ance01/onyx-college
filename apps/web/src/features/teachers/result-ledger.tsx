@@ -286,6 +286,7 @@ function LedgerRow({
 
   const rowClass = [
     'ledger__row',
+    'result-entry-card',
     draft.exempt ? 'ledger__row--exempt' : '',
     saveState === 'saving' ? 'ledger__row--saving' : '',
   ]

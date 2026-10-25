@@ -20,7 +20,9 @@ export function StatusBadge({
 }: StatusBadgeProps) {
   const resolvedTone = tone ?? (status ? getStatusTone(status) : 'neutral');
   const label = children ?? (status ? formatStatusLabel(status) : null);
-  const classes = ['ui-status', `ui-status--${resolvedTone}`, className].filter(Boolean).join(' ');
+  const classes = ['ui-status', 'status-badge', `ui-status--${resolvedTone}`, className]
+    .filter(Boolean)
+    .join(' ');
 
   return (
     <span className={classes}>

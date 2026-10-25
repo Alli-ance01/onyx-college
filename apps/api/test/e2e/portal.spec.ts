@@ -194,12 +194,20 @@ test('administrator approves a registration and the applicant enters the student
   await expect(page.locator('main h1')).toHaveText('David Adeyemi');
   await page.getByRole('button', { name: 'Begin review', exact: true }).click();
   await page.getByRole('button', { name: 'Verify', exact: true }).click();
-  await expect(page.getByText(/VERIFIED/u)).toBeVisible();
+  await expect(page.getByText(/VERIFIED/i)).toBeVisible();
   await page
     .getByRole('combobox', { name: 'Class level', exact: true })
     .selectOption({ label: 'JSS1' });
   await page.getByRole('button', { name: 'Approve and create student', exact: true }).click();
-  await expect(page.locator('main .status-badge').filter({ hasText: /^APPROVED$/u })).toBeVisible();
+  const confirmDialog = page.getByRole('dialog');
+  if (await confirmDialog.isVisible()) {
+    await confirmDialog
+      .getByRole('button', { name: 'Approve and create student', exact: true })
+      .click();
+  }
+  await expect(
+    page.locator('main .status-badge, main .ui-status').filter({ hasText: /^Approved$/i }),
+  ).toBeVisible();
   const studentContext = await browser.newContext();
   try {
     const studentPage = await studentContext.newPage();
