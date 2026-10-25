@@ -86,12 +86,14 @@ test('teacher scores reach independently reviewed reports and audited correction
   });
   await page.reload();
   const studentCard = cards.filter({ hasText: 'ONYX/0001' });
-  await studentCard.getByRole('spinbutton').fill('82');
-  await studentCard
-    .getByLabel('Published-result correction reason')
-    .fill('Verified against the original marked examination paper.');
-  await studentCard.getByRole('button', { name: 'Request correction' }).click();
-  await expect(studentCard.getByText('Correction request submitted.')).toBeVisible();
+  await expect(studentCard).toBeVisible();
+  await studentCard.getByRole('button', { name: 'Correct' }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole('spinbutton').first().fill('82');
+  await dialog.getByRole('textbox').fill('Verified against the original marked examination paper.');
+  await dialog.getByRole('button', { name: 'Submit request' }).click();
+  await expect(dialog.getByText('Correction request submitted.')).toBeVisible();
   const corrections = z
     .object({ data: z.array(z.object({ id: z.string(), resultEntryId: z.string() })) })
     .parse(await (await request.get(`${base}/results/corrections`, { headers })).json());

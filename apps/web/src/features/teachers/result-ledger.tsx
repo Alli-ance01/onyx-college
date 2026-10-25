@@ -89,20 +89,33 @@ interface CorrectionDialogProps {
   onClose: () => void;
 }
 
-function CorrectionDialog({ batch, entry, draft, onClose }: CorrectionDialogProps) {
+function CorrectionDialog({ batch, entry, draft: parentDraft, onClose }: CorrectionDialogProps) {
   const auth = useAuthSession();
   const cache = useQueryClient();
   const [reason, setReason] = useState('');
+  const [localDraft, setLocalDraft] = useState<EntryDraft>(() => ({
+    components: [...parentDraft.components],
+    exempt: parentDraft.exempt,
+  }));
+
+  function setLocalComponent(key: string, update: ResultComponentDto) {
+    setLocalDraft((prev) => ({
+      ...prev,
+      components: prev.components.some((c) => c.key === key)
+        ? prev.components.map((c) => (c.key === key ? update : c))
+        : [...prev.components, update],
+    }));
+  }
+
   const correction = useMutation({
     mutationFn: () =>
       teacherApi.requestResultCorrection(auth.apiClient, entry.id, {
-        ...draft,
+        ...localDraft,
         reason,
       }),
     onSuccess: async () => {
       setReason('');
       await cache.invalidateQueries({ queryKey: teacherQueryKeys.resultBatch(batch.id) });
-      onClose();
     },
   });
 
@@ -121,9 +134,40 @@ function CorrectionDialog({ batch, entry, draft, onClose }: CorrectionDialogProp
           <span className="ledger-dialog__student-id">{entry.student.studentId}</span>
         </p>
         <p className="ledger-dialog__note">
-          This batch is published. Enter a correction reason — school administration will review the
-          request.
+          This batch is published. Adjust the scores below and enter a correction reason — school
+          administration will review the request.
         </p>
+        <div className="ledger-dialog__scores">
+          {batch.assessmentScheme.components.map((component) => {
+            const value = getComponentValue(localDraft.components, component.key);
+            return (
+              <FormField
+                controlId={`correction-score-${entry.id}-${component.key}`}
+                key={component.key}
+                label={`${component.label} (max ${component.maximum})`}
+              >
+                <input
+                  aria-label={`${component.label} for ${entry.student.name}`}
+                  className="ledger__score-input"
+                  id={`correction-score-${entry.id}-${component.key}`}
+                  inputMode="decimal"
+                  max={component.maximum}
+                  min="0"
+                  step="0.01"
+                  type="number"
+                  value={value.score ?? ''}
+                  onChange={(e) => {
+                    setLocalComponent(component.key, {
+                      key: component.key,
+                      score: e.target.value,
+                      state: 'SCORED',
+                    });
+                  }}
+                />
+              </FormField>
+            );
+          })}
+        </div>
         <FormField controlId={`correction-reason-${entry.id}`} label="Reason for correction">
           <textarea
             id={`correction-reason-${entry.id}`}
