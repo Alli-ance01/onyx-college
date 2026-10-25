@@ -112,6 +112,43 @@ describe('API foundation', () => {
     expect(output).toContain('requestId');
   });
 
+  it('logs safe MongoDB error diagnostics without exposing raw messages or values', async () => {
+    const lines: string[] = [];
+    const mongoError = Object.assign(new Error('sensitive-mongo-message'), {
+      code: 11000,
+      codeName: 'DuplicateKey',
+      keyPattern: { studentId: 1 },
+      keyValue: { studentId: 'sensitive-student-id' },
+      name: 'MongoServerError',
+    });
+    const app = createApp({
+      environment,
+      logger: pino(
+        { level: 'info' },
+        {
+          write: (line) => {
+            lines.push(line);
+          },
+        },
+      ),
+      readiness: createReadiness(true),
+      registerFoundationRoutes: (expressApp) => {
+        expressApp.get('/api/v1/mongo-error-check', () => {
+          throw mongoError;
+        });
+      },
+    });
+
+    await request(app).get('/api/v1/mongo-error-check').expect(500);
+
+    const output = lines.join('');
+    expect(output).toContain('"mongoCode":11000');
+    expect(output).toContain('"mongoCodeName":"DuplicateKey"');
+    expect(output).toContain('"mongoKeyPatternFields":["studentId"]');
+    expect(output).not.toContain('sensitive-mongo-message');
+    expect(output).not.toContain('sensitive-student-id');
+  });
+
   it('reports liveness without requiring dependency readiness', async () => {
     const app = createApp({ environment, logger, readiness: createReadiness(false) });
 

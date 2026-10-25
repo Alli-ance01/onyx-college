@@ -39,6 +39,37 @@ function normalizeError(error: unknown): AppError {
   });
 }
 
+function mongoErrorDiagnostics(error: unknown): Record<string, unknown> {
+  if (typeof error !== 'object' || error === null || !('name' in error)) return {};
+  const candidate = error as {
+    code?: unknown;
+    codeName?: unknown;
+    errorLabels?: unknown;
+    keyPattern?: unknown;
+    name?: unknown;
+  };
+  if (candidate.name !== 'MongoServerError') return {};
+
+  const keyPatternFields =
+    typeof candidate.keyPattern === 'object' && candidate.keyPattern !== null
+      ? Object.keys(candidate.keyPattern)
+      : undefined;
+  return {
+    ...(typeof candidate.code === 'number' || typeof candidate.code === 'string'
+      ? { mongoCode: candidate.code }
+      : {}),
+    ...(typeof candidate.codeName === 'string' ? { mongoCodeName: candidate.codeName } : {}),
+    ...(Array.isArray(candidate.errorLabels)
+      ? {
+          mongoErrorLabels: candidate.errorLabels.filter(
+            (label): label is string => typeof label === 'string',
+          ),
+        }
+      : {}),
+    ...(keyPatternFields === undefined ? {} : { mongoKeyPatternFields: keyPatternFields }),
+  };
+}
+
 export const errorHandler: ErrorRequestHandler = (error, request, response, _next) => {
   const normalized = normalizeError(error);
 
@@ -47,6 +78,7 @@ export const errorHandler: ErrorRequestHandler = (error, request, response, _nex
       {
         errorType: error instanceof Error ? error.name : 'UnknownError',
         requestId: request.requestId,
+        ...mongoErrorDiagnostics(error),
         ...(normalized instanceof DocumentStorageUnavailableError
           ? {
               storageReason: normalized.storageReason,
