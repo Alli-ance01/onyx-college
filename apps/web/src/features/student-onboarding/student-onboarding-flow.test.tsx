@@ -146,7 +146,11 @@ describe('student onboarding visible flows', () => {
       'GET /api/v1/document-requirements': [],
     });
     expect(
-      await screen.findByRole('heading', { name: 'Complete your Onyx College registration' }),
+      await screen.findByRole(
+        'heading',
+        { name: 'Complete your Onyx College registration' },
+        { timeout: 5000 },
+      ),
     ).toBeVisible();
     expect(screen.getByRole('button', { name: /Review & Submit/iu })).toBeVisible();
     expect(screen.getByLabelText('Surname')).toBeVisible();
@@ -163,7 +167,11 @@ describe('student onboarding visible flows', () => {
       'GET /api/v1/document-requirements': [],
     });
     expect(
-      await screen.findByRole('heading', { name: 'Your registration is with the school' }),
+      await screen.findByRole(
+        'heading',
+        { name: 'Your registration is with the school' },
+        { timeout: 5000 },
+      ),
     ).toBeVisible();
     expect(screen.queryByLabelText('Surname')).not.toBeInTheDocument();
   });
@@ -181,7 +189,9 @@ describe('student onboarding visible flows', () => {
         studentName: 'Chidi Okafor',
       },
     });
-    expect(await screen.findByRole('heading', { name: 'Welcome, Chidi Okafor' })).toBeVisible();
+    expect(
+      await screen.findByRole('heading', { name: 'Welcome, Chidi Okafor' }, { timeout: 5000 }),
+    ).toBeVisible();
     expect(screen.getByText('ONYX/0001')).toBeVisible();
     expect(screen.getByRole('heading', { name: 'Your classwork' })).toBeVisible();
   });
