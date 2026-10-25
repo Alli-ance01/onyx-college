@@ -31,7 +31,10 @@ export async function cleanupLegacyIndexes(logger?: Logger): Promise<void> {
         }
       } catch (error) {
         logger?.warn(
-          { collection: colInfo.name, error: error instanceof Error ? error.message : String(error) },
+          {
+            collection: colInfo.name,
+            error: error instanceof Error ? error.message : String(error),
+          },
           'Could not inspect or drop legacy index on collection',
         );
       }
