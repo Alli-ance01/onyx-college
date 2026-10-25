@@ -6,6 +6,7 @@ import {
   TrackModel,
 } from '../../academics/infrastructure/academic-models.js';
 import { DocumentRequirementModel } from '../../documents/infrastructure/document-models.js';
+import { cleanupLegacyIndexes } from '../../../platform/database/legacy-index-cleanup.js';
 import { RegistrationFormConfigurationModel } from '../infrastructure/registration-models.js';
 
 const fieldDefinitions: readonly (readonly [string, string, string, boolean])[] = [
@@ -62,6 +63,7 @@ const tracks = [
 ] as const;
 
 export async function ensureStudentOnboardingReferenceData(): Promise<void> {
+  await cleanupLegacyIndexes();
   await Promise.all([
     ...classLevels.map((level) =>
       ClassLevelModel.updateOne(

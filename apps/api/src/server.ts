@@ -4,6 +4,7 @@ import { createApp } from './app.js';
 import { loadEnvironment } from './config/environment.js';
 import { MongoConnection } from './platform/database/mongo-connection.js';
 import { ensureStudentOnboardingReferenceData } from './modules/student-registration/application/reference-data.js';
+import { cleanupLegacyIndexes } from './platform/database/legacy-index-cleanup.js';
 import { ServiceReadiness } from './platform/health/service-readiness.js';
 import { createLogger } from './platform/logging/logger.js';
 
@@ -34,6 +35,7 @@ async function startServer(): Promise<void> {
 
   try {
     await database.connect();
+    await cleanupLegacyIndexes(logger);
     await ensureStudentOnboardingReferenceData();
   } catch (error) {
     logger.fatal(

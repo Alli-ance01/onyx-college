@@ -1,5 +1,6 @@
 import { loadEnvironment } from '../config/environment.js';
 import { applicationModels } from '../platform/database/application-models.js';
+import { cleanupLegacyIndexes } from '../platform/database/legacy-index-cleanup.js';
 import { MongoConnection } from '../platform/database/mongo-connection.js';
 import { createLogger } from '../platform/logging/logger.js';
 
@@ -10,6 +11,7 @@ async function main(): Promise<void> {
 
   try {
     await database.connect();
+    await cleanupLegacyIndexes(logger);
 
     for (const model of applicationModels) {
       await model.createIndexes();

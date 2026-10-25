@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import mongoose from 'mongoose';
 
 import { ConflictError, NotFoundError } from '../../../app/errors/app-error.js';
+import { cleanupLegacyIndexes } from '../../../platform/database/legacy-index-cleanup.js';
 import {
   AcademicSessionModel,
   ClassLevelModel,
@@ -83,6 +84,8 @@ export class RegistrationApprovalService {
     );
     if (strongDuplicate && existing.duplicateResolution !== 'CONFIRMED_DISTINCT')
       throw new ConflictError('The possible duplicate must be resolved before approval.');
+
+    await cleanupLegacyIndexes();
 
     return mongoose.connection.transaction(async (session) => {
       const academicSession = await AcademicSessionModel.findOne({
