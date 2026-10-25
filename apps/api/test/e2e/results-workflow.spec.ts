@@ -94,6 +94,7 @@ test('teacher scores reach independently reviewed reports and audited correction
   await dialog.getByRole('textbox').fill('Verified against the original marked examination paper.');
   await dialog.getByRole('button', { name: 'Submit request' }).click();
   await expect(dialog.getByText('Correction request submitted.')).toBeVisible();
+  await dialog.getByRole('button', { name: 'Cancel' }).click();
   const corrections = z
     .object({ data: z.array(z.object({ id: z.string(), resultEntryId: z.string() })) })
     .parse(await (await request.get(`${base}/results/corrections`, { headers })).json());
