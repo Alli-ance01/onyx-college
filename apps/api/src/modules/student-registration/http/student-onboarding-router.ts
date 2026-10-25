@@ -77,12 +77,11 @@ const documentReviewSchema = z
     status: z.enum(['REJECTED', 'VERIFIED']),
   })
   .strict();
-const correctionSchema = z
-  .object({
-    field: z.string().trim(),
-    reason: z.string().trim().min(5).max(1000),
-    requestedValue: z.string().trim().min(1).max(500),
-  })
+const correctionSchema = z.object({
+  field: z.string().trim(),
+  reason: z.string().trim().min(5).max(1000),
+  requestedValue: z.string().trim().min(1).max(500),
+});
 const correctionDecisionSchema = z.object({ reason: z.string().trim().min(5).max(1000) }).strict();
 const updateStudentProfileSchema = z
   .object({

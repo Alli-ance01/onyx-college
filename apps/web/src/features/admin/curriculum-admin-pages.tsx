@@ -299,8 +299,7 @@ export function AdminClassSubjectAssignmentPage() {
       ? selectedSession
       : (sessions.data?.find((s) => s.status === 'ACTIVE')?.id ?? sessions.data?.[0]?.id ?? '');
 
-  const effectiveClassId =
-    selectedClass !== '' ? selectedClass : (classes.data?.[0]?.id ?? '');
+  const effectiveClassId = selectedClass !== '' ? selectedClass : (classes.data?.[0]?.id ?? '');
 
   const classLevel = classes.data?.find((item) => item.id === effectiveClassId);
   const isSenior = classLevel?.stage === 'SENIOR';
@@ -545,8 +544,8 @@ export function AdminClassSubjectAssignmentPage() {
                   Subject assignments: {managingEnrollment.student.name}
                 </h2>
                 <p style={{ color: 'var(--color-text-secondary)', margin: '0.25rem 0 0' }}>
-                  Student ID: <strong>{managingEnrollment.student.studentId}</strong> &bull; Placement:{' '}
-                  {managingEnrollment.classLevel.name}
+                  Student ID: <strong>{managingEnrollment.student.studentId}</strong> &bull;
+                  Placement: {managingEnrollment.classLevel.name}
                   {managingEnrollment.track ? ` / ${managingEnrollment.track.name}` : ''} (
                   {managingEnrollment.academicSession.label})
                 </p>
@@ -581,4 +580,3 @@ export function AdminClassSubjectAssignmentPage() {
     </main>
   );
 }
-

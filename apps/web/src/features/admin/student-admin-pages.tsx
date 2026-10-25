@@ -10,7 +10,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link, useLocation, useParams, useSearchParams } from 'react-router';
 
-import { ApiClientError } from '../../lib/api/api-client.js';
 import { useAuthSession } from '../../lib/auth/use-auth-session.js';
 import { Button, DataTable, ErrorState, StatusBadge } from '../../shared/ui/index.js';
 import { DocumentViewButton } from '../student-onboarding/document-view-button.js';
@@ -18,8 +17,6 @@ import {
   EditStudentProfileModal,
   StudentEnrolledSubjectsPanel,
 } from './student-profile-components.js';
-
-
 
 export function AdminAcademicSetupPage() {
   const auth = useAuthSession();
@@ -388,8 +385,7 @@ export function AdminStudentProfilePage() {
       ['documents.read', 'documents.review'].includes(permission),
     ) === true;
   const canUpdate = auth.principal?.permissions.includes('students.update') === true;
-  const canManageEnrollments =
-    auth.principal?.permissions.includes('enrollments.manage') === true;
+  const canManageEnrollments = auth.principal?.permissions.includes('enrollments.manage') === true;
 
   return (
     <main className="portal-content product-page">

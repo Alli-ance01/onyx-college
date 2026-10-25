@@ -25,8 +25,7 @@ export function StudentEnrolledSubjectsPanel({
   const queryClient = useQueryClient();
 
   const [selectedEnrollmentId, setSelectedEnrollmentId] = useState(enrollments[0]?.id ?? '');
-  const activeEnrollment =
-    enrollments.find((e) => e.id === selectedEnrollmentId) ?? enrollments[0];
+  const activeEnrollment = enrollments.find((e) => e.id === selectedEnrollmentId) ?? enrollments[0];
   const activeEnrollmentId = activeEnrollment?.id ?? '';
 
   // Action Dialog state
@@ -143,7 +142,8 @@ export function StudentEnrolledSubjectsPanel({
             >
               {enrollments.map((enr) => (
                 <option key={enr.id} value={enr.id}>
-                  {enr.session.label} — {enr.classLevel.name} {enr.track ? `(${enr.track.name})` : ''} [{enr.status}]
+                  {enr.session.label} — {enr.classLevel.name}{' '}
+                  {enr.track ? `(${enr.track.name})` : ''} [{enr.status}]
                 </option>
               ))}
             </select>

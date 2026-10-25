@@ -21,8 +21,7 @@ export function EditStudentProfileModal({
 }: EditStudentProfileModalProps) {
   const auth = useAuthSession();
   const queryClient = useQueryClient();
-  const canReadSensitive =
-    auth.principal?.permissions.includes('students.read_sensitive') === true;
+  const canReadSensitive = auth.principal?.permissions.includes('students.read_sensitive') === true;
 
   const [activeTab, setActiveTab] = useState<'biodata' | 'guardians' | 'medical'>('biodata');
 
@@ -35,9 +34,7 @@ export function EditStudentProfileModal({
   const [nationality, setNationality] = useState(student.biodata.nationality);
   const [stateOfOrigin, setStateOfOrigin] = useState(student.biodata.stateOfOrigin ?? '');
   const [lga, setLga] = useState(student.biodata.lga ?? '');
-  const [residentialAddress, setResidentialAddress] = useState(
-    student.biodata.residentialAddress,
-  );
+  const [residentialAddress, setResidentialAddress] = useState(student.biodata.residentialAddress);
 
   // Guardians state
   const [guardians, setGuardians] = useState(
@@ -142,9 +139,7 @@ export function EditStudentProfileModal({
           </p>
         </header>
 
-        {errorMessage ? (
-          <div className="form-alert form-alert--error">{errorMessage}</div>
-        ) : null}
+        {errorMessage ? <div className="form-alert form-alert--error">{errorMessage}</div> : null}
 
         <div className="tab-list" role="tablist">
           <button
@@ -450,7 +445,12 @@ export function EditStudentProfileModal({
           ) : null}
 
           <div className="form-actions">
-            <Button disabled={mutation.isPending} type="button" variant="secondary" onClick={onClose}>
+            <Button
+              disabled={mutation.isPending}
+              type="button"
+              variant="secondary"
+              onClick={onClose}
+            >
               Cancel
             </Button>
             <Button loading={mutation.isPending} loadingLabel="Saving changes…" type="submit">
