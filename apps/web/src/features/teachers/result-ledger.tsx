@@ -29,6 +29,7 @@ import {
 
 import { ApiClientError } from '../../lib/api/index.js';
 import { useAuthSession } from '../../lib/auth/use-auth-session.js';
+import { resolveErrorMessage } from '../../shared/error-messages.js';
 import { Button, FormField } from '../../shared/ui/index.js';
 import { teacherApi, teacherQueryKeys } from './teacher-api.js';
 
@@ -36,7 +37,7 @@ import { teacherApi, teacherQueryKeys } from './teacher-api.js';
 
 function apiErrorMessage(error: Error | null): string | undefined {
   if (error === null) return undefined;
-  return error instanceof ApiClientError ? error.message : 'The request could not be completed.';
+  return resolveErrorMessage(error, { action: 'save results', entity: 'result' });
 }
 
 /** Provisional total from draft components (ABSENT components score 0). */

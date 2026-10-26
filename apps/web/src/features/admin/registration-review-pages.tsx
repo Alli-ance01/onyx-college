@@ -18,7 +18,15 @@ import { Link, useParams, useSearchParams } from 'react-router';
 
 import { ApiClientError } from '../../lib/api/api-client.js';
 import { useAuthSession } from '../../lib/auth/use-auth-session.js';
-import { Button, DataTable, ErrorState, LoadingState, StatusBadge } from '../../shared/ui/index.js';
+import { resolveErrorMessage } from '../../shared/error-messages.js';
+import {
+  Button,
+  DataTable,
+  ErrorState,
+  LoadingState,
+  StatusBadge,
+  useToast,
+} from '../../shared/ui/index.js';
 import { formatStatusLabel } from '../../shared/ui/status-label.js';
 import { DocumentViewButton } from '../student-onboarding/document-view-button.js';
 
@@ -97,7 +105,7 @@ const CORRECTION_FIELD_GROUPS: {
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
 function apiError(error: unknown): string {
-  return error instanceof ApiClientError ? error.message : 'The request could not be completed.';
+  return resolveErrorMessage(error, { action: 'complete registration review', entity: 'registration' });
 }
 
 function camelToWords(key: string): string {
@@ -290,6 +298,7 @@ interface ApproveDialogProps {
   academic: AcademicSetupDto;
   classLevelId: string;
   trackId: string;
+  error?: string | undefined;
   onConfirm: () => void;
   onCancel: () => void;
   isPending: boolean;
@@ -300,6 +309,7 @@ function ApproveDialog({
   academic,
   classLevelId,
   trackId,
+  error,
   onConfirm,
   onCancel,
   isPending,
@@ -352,6 +362,11 @@ function ApproveDialog({
             </dd>
           </div>
         </dl>
+        {error !== undefined ? (
+          <p className="form-alert form-alert--error" role="alert">
+            {error}
+          </p>
+        ) : null}
         <div className="review-dialog__actions">
           <Button loading={isPending} loadingLabel="Approving…" onClick={onConfirm}>
             Approve and create student
@@ -443,6 +458,7 @@ export function AdminRegistrationReviewPage() {
   const { registrationId = '' } = useParams();
   const auth = useAuthSession();
   const client = useQueryClient();
+  const { toast } = useToast();
 
   // Dialog state
   const [openDialog, setOpenDialog] = useState<DialogKind>(null);
@@ -492,10 +508,42 @@ export function AdminRegistrationReviewPage() {
         ...(headers === undefined ? {} : { headers }),
         method: 'POST',
       }),
-    onSuccess: async () => {
+    onSuccess: async (_, vars) => {
       setOpenDialog(null);
       setDialogReason('');
       await refresh();
+      if (vars.path === 'approve') {
+        toast({
+          tone: 'success',
+          title: 'Student application approved',
+          description: 'Official student record created and permanent Student ID assigned.',
+        });
+      } else if (vars.path === 'reject') {
+        toast({
+          tone: 'warning',
+          title: 'Application rejected',
+          description: 'Rejection decision has been saved.',
+        });
+      } else if (vars.path === 'request-changes') {
+        toast({
+          tone: 'info',
+          title: 'Changes requested',
+          description: 'Correction notification sent to applicant.',
+        });
+      } else if (vars.path === 'reopen') {
+        toast({
+          tone: 'info',
+          title: 'Registration reopened',
+          description: 'Application returned to under review status.',
+        });
+      }
+    },
+    onError: (err) => {
+      toast({
+        tone: 'danger',
+        title: 'Action failed',
+        description: apiError(err),
+      });
     },
   });
 
@@ -511,7 +559,21 @@ export function AdminRegistrationReviewPage() {
         body: { status },
         method: 'POST',
       }),
-    onSuccess: refresh,
+    onSuccess: async (_, vars) => {
+      toast({
+        tone: vars.status === 'VERIFIED' ? 'success' : 'warning',
+        title: vars.status === 'VERIFIED' ? 'Document verified' : 'Document rejected',
+        description: `Document review status updated to ${vars.status.toLowerCase()}.`,
+      });
+      await refresh();
+    },
+    onError: (err) => {
+      toast({
+        tone: 'danger',
+        title: 'Document review failed',
+        description: apiError(err),
+      });
+    },
   });
 
   if (query.isLoading) return <LoadingState label="Loading registration" rows={6} />;
@@ -805,6 +867,7 @@ export function AdminRegistrationReviewPage() {
         <ApproveDialog
           academic={academic.data}
           classLevelId={classLevelId}
+          error={actionError}
           isPending={command.isPending}
           registration={registration}
           trackId={trackId}

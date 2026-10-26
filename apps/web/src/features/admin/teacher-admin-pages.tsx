@@ -4,6 +4,7 @@ import { useState, type SyntheticEvent } from 'react';
 
 import { ApiClientError } from '../../lib/api/index.js';
 import { useAuthSession } from '../../lib/auth/use-auth-session.js';
+import { resolveErrorMessage } from '../../shared/error-messages.js';
 import { formText } from '../../shared/forms/form-data.js';
 import {
   Button,
@@ -17,7 +18,7 @@ import { adminApi, adminQueryKeys } from './admin-api.js';
 
 function errorMessage(error: Error | null): string | undefined {
   if (error === null) return undefined;
-  return error instanceof ApiClientError ? error.message : 'The operation could not be completed.';
+  return resolveErrorMessage(error, { action: 'complete teacher administration', entity: 'teacher' });
 }
 
 function useTeachers() {

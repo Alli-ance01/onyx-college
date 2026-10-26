@@ -4,7 +4,8 @@ import { useState, type SyntheticEvent } from 'react';
 
 import { ApiClientError } from '../../lib/api/api-client.js';
 import { useAuthSession } from '../../lib/auth/use-auth-session.js';
-import { Button, FormField } from '../../shared/ui/index.js';
+import { resolveErrorMessage } from '../../shared/error-messages.js';
+import { Button, FormField, useToast } from '../../shared/ui/index.js';
 
 export interface EditStudentProfileModalProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ export function EditStudentProfileModal({
 }: EditStudentProfileModalProps) {
   const auth = useAuthSession();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const canReadSensitive = auth.principal?.permissions.includes('students.read_sensitive') === true;
 
   const [activeTab, setActiveTab] = useState<'biodata' | 'guardians' | 'medical'>('biodata');
@@ -98,6 +100,11 @@ export function EditStudentProfileModal({
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['admin-student', studentId] });
       await queryClient.invalidateQueries({ queryKey: ['admin-students'] });
+      toast({
+        tone: 'success',
+        title: 'Profile updated',
+        description: `Official records for ${student.studentName} have been saved.`,
+      });
       onClose();
     },
   });
@@ -109,12 +116,9 @@ export function EditStudentProfileModal({
     mutation.mutate();
   }
 
-  const errorMessage =
-    mutation.error instanceof ApiClientError
-      ? mutation.error.message
-      : mutation.error instanceof Error
-        ? mutation.error.message
-        : undefined;
+  const errorMessage = mutation.error
+    ? resolveErrorMessage(mutation.error, { action: 'update student profile', entity: 'student' })
+    : undefined;
 
   return (
     <div

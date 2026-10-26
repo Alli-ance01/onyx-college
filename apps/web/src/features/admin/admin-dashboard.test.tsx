@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
@@ -184,6 +184,9 @@ describe('admin dashboard', () => {
     const fetchMock = createFetchMock(limitedPrincipal);
     renderDashboard(fetchMock);
 
+    await waitFor(() => {
+      expect(screen.queryByText('Checking your secure session…')).not.toBeInTheDocument();
+    });
     expect(await screen.findByRole('status')).toHaveTextContent(
       'No review queues are assigned to this account.',
     );

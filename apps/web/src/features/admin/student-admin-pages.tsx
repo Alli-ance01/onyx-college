@@ -11,7 +11,8 @@ import { useState } from 'react';
 import { Link, useLocation, useParams, useSearchParams } from 'react-router';
 
 import { useAuthSession } from '../../lib/auth/use-auth-session.js';
-import { Button, DataTable, ErrorState, StatusBadge } from '../../shared/ui/index.js';
+import { resolveErrorMessage } from '../../shared/error-messages.js';
+import { Button, DataTable, ErrorState, StatusBadge, useToast } from '../../shared/ui/index.js';
 import { DocumentViewButton } from '../student-onboarding/document-view-button.js';
 import {
   EditStudentProfileModal,
@@ -490,6 +491,7 @@ export function AdminStudentProfilePage() {
 export function AdminCorrectionQueuePage() {
   const auth = useAuthSession();
   const client = useQueryClient();
+  const { toast } = useToast();
   const [reason, setReason] = useState('Reviewed against the submitted profile information.');
   const query = useQuery({
     queryKey: ['profile-corrections'],
@@ -506,7 +508,21 @@ export function AdminCorrectionQueuePage() {
         body: { reason },
         method: 'POST',
       }),
-    onSuccess: () => client.invalidateQueries({ queryKey: ['profile-corrections'] }),
+    onSuccess: async (_, vars) => {
+      await client.invalidateQueries({ queryKey: ['profile-corrections'] });
+      toast({
+        tone: vars.action === 'approve' ? 'success' : 'info',
+        title: vars.action === 'approve' ? 'Correction approved' : 'Correction rejected',
+        description: `Profile correction request has been ${vars.action === 'approve' ? 'applied to biodata' : 'rejected'}.`,
+      });
+    },
+    onError: (err) => {
+      toast({
+        tone: 'danger',
+        title: 'Correction decision failed',
+        description: resolveErrorMessage(err, { action: 'update correction request', entity: 'correction' }),
+      });
+    },
   });
   return (
     <main className="portal-content product-page">

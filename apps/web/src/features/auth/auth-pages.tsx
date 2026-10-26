@@ -7,6 +7,7 @@ import { z } from 'zod';
 
 import { ApiClientError } from '../../lib/api/api-client.js';
 import { useAuthSession } from '../../lib/auth/use-auth-session.js';
+import { resolveErrorMessage } from '../../shared/error-messages.js';
 import { Button } from '../../shared/ui/button.js';
 
 const loginSchema = z.object({
@@ -40,17 +41,7 @@ function portalPath(portal: 'ADMIN' | 'ONBOARDING' | 'STUDENT' | 'TEACHER'): str
 }
 
 function errorMessage(error: unknown): string {
-  if (error instanceof ApiClientError) {
-    if (error.code === 'INVALID_CREDENTIALS') return 'The username or password is incorrect.';
-    if (error.code === 'ACCOUNT_LOCKED')
-      return 'This account is temporarily locked. Try again later.';
-    if (error.code === 'ACCOUNT_UNAVAILABLE') return 'This account is not available for sign in.';
-    return error.message;
-  }
-  if (error instanceof TypeError && error.message.toLowerCase().includes('fetch')) {
-    return 'The service is taking longer than expected. Check your connection and try again.';
-  }
-  return 'The request could not be completed. Please try again.';
+  return resolveErrorMessage(error, { action: 'sign in' });
 }
 
 function AuthAside({

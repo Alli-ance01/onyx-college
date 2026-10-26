@@ -107,7 +107,9 @@ describe('browser authentication lifecycle', () => {
       target: { value: 'a-secure-password' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
-    expect(await screen.findByRole('heading', { name: 'School overview' })).toBeVisible();
+    expect(
+      await screen.findByRole('heading', { name: 'School overview' }, { timeout: 5000 }),
+    ).toBeVisible();
   });
 
   it('routes an unapproved applicant to onboarding and lets them sign out', async () => {

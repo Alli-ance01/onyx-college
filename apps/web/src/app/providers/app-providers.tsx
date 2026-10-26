@@ -2,6 +2,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { useState, type ReactNode } from 'react';
 
 import { AuthSessionProvider } from '../../lib/auth/auth-session-provider.js';
+import { ToastProvider } from '../../shared/ui/toast.js';
 import { createQueryClient } from './query-client.js';
 
 interface AppProvidersProps {
@@ -13,7 +14,9 @@ export function AppProviders({ children }: AppProvidersProps) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthSessionProvider>{children}</AuthSessionProvider>
+      <AuthSessionProvider>
+        <ToastProvider>{children}</ToastProvider>
+      </AuthSessionProvider>
     </QueryClientProvider>
   );
 }

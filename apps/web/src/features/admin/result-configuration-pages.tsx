@@ -4,6 +4,7 @@ import { useState, type SyntheticEvent } from 'react';
 
 import { ApiClientError } from '../../lib/api/index.js';
 import { useAuthSession } from '../../lib/auth/use-auth-session.js';
+import { resolveErrorMessage } from '../../shared/error-messages.js';
 import { formText } from '../../shared/forms/form-data.js';
 import {
   Button,
@@ -29,7 +30,7 @@ interface BandDraft {
 
 function errorMessage(error: Error | null): string | undefined {
   if (error === null) return undefined;
-  return error instanceof ApiClientError ? error.message : 'The configuration could not be saved.';
+  return resolveErrorMessage(error, { action: 'save grading or assessment configuration', entity: 'configuration scheme' });
 }
 
 export function AdminAssessmentSchemesPage() {

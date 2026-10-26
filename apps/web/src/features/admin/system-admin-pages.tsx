@@ -5,6 +5,7 @@ import { Link } from 'react-router';
 
 import { ApiClientError } from '../../lib/api/index.js';
 import { useAuthSession } from '../../lib/auth/use-auth-session.js';
+import { resolveErrorMessage } from '../../shared/error-messages.js';
 import { formText } from '../../shared/forms/form-data.js';
 import {
   Button,
@@ -26,7 +27,7 @@ import {
 
 function errorMessage(error: Error | null): string | undefined {
   if (error === null) return undefined;
-  return error instanceof ApiClientError ? error.message : 'The operation could not be completed.';
+  return resolveErrorMessage(error, { action: 'complete administrative action', entity: 'system record' });
 }
 
 export function AdminDashboardPage() {

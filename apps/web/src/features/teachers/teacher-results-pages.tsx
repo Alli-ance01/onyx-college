@@ -5,6 +5,7 @@ import { Link, useNavigate, useParams } from 'react-router';
 
 import { ApiClientError } from '../../lib/api/index.js';
 import { useAuthSession } from '../../lib/auth/use-auth-session.js';
+import { resolveErrorMessage } from '../../shared/error-messages.js';
 import { useUnsavedChanges } from '../../shared/hooks/use-unsaved-changes.js';
 import { formText } from '../../shared/forms/form-data.js';
 import {
@@ -22,7 +23,7 @@ import { teacherApi, teacherQueryKeys } from './teacher-api.js';
 
 function errorMessage(error: Error | null): string | undefined {
   if (error === null) return undefined;
-  return error instanceof ApiClientError ? error.message : 'The request could not be completed.';
+  return resolveErrorMessage(error, { action: 'process results', entity: 'result' });
 }
 
 function canEdit(status: ResultBatchDto['status']): boolean {

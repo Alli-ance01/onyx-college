@@ -5,8 +5,9 @@ import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router';
 
 import { publicEnvironment } from '../../config/public-environment.js';
-import { ApiClient, ApiClientError } from '../../lib/api/api-client.js';
+import { ApiClient } from '../../lib/api/api-client.js';
 import { useAuthSession } from '../../lib/auth/use-auth-session.js';
+import { resolveErrorMessage } from '../../shared/error-messages.js';
 
 interface SignupForm {
   email?: string;
@@ -38,11 +39,7 @@ export function StudentSignupPage() {
       await auth.login({ identifier: values.username, password: values.password });
       void navigate('/onboarding', { replace: true });
     } catch (caught) {
-      setError(
-        caught instanceof ApiClientError
-          ? caught.message
-          : 'We could not create your account. Please try again.',
-      );
+      setError(resolveErrorMessage(caught, { action: 'create applicant account', entity: 'account' }));
     }
   });
 
