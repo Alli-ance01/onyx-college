@@ -32,27 +32,7 @@ interface ErrorContext {
 }
 
 function resolveApiError(error: ApiClientError, context?: ErrorContext): string {
-  // ── Authentication & authorization ───────────────────────────────────────
-  if (error.code === 'AUTHENTICATION_REQUIRED') {
-    return 'Your session has ended. Please sign in again to continue.';
-  }
-  if (error.code === 'INVALID_CREDENTIALS') {
-    return 'The username or password is incorrect. Double-check your details and try again.';
-  }
-  if (error.code === 'ACCOUNT_LOCKED') {
-    return 'This account has been temporarily locked after too many attempts. Please wait a few minutes before trying again.';
-  }
-  if (error.code === 'ACCOUNT_UNAVAILABLE') {
-    return 'This account is not currently available. Contact the school office for assistance.';
-  }
-  if (error.code === 'ACCESS_DENIED' || error.code === 'INSUFFICIENT_PERMISSIONS') {
-    return "You don't have permission to perform this action. If you believe this is a mistake, contact your administrator.";
-  }
-  if (error.code === 'TOKEN_EXPIRED' || error.code === 'INVALID_TOKEN') {
-    return 'Your session has expired. Please sign in again.';
-  }
-
-  // ── Validation ───────────────────────────────────────────────────────────
+  // ── Validation details take precedence if available ───────────────────────
   if (error.code === 'VALIDATION_ERROR') {
     const details = error.details;
     if (details !== undefined && typeof details === 'object') {
@@ -62,8 +42,22 @@ function resolveApiError(error: ApiClientError, context?: ErrorContext): string 
         .join(' · ');
       if (fieldErrors.length > 0) return fieldErrors;
     }
-    return error.message || 'Some fields contain invalid values. Please review and correct them.';
+    if (error.message && error.message !== 'The request could not be completed.') {
+      return error.message;
+    }
+    return 'Some fields contain invalid values. Please review and correct them.';
   }
+
+  // ── Specific server message takes priority over client generic text ─────────
+  if (
+    error.message &&
+    error.message !== 'The request could not be completed.' &&
+    error.message !== 'An unexpected error occurred.'
+  ) {
+    return error.message;
+  }
+
+  // ── Authentication & authorization ───────────────────────────────────────
 
   // ── Duplicate / conflict ─────────────────────────────────────────────────
   if (error.code === 'DUPLICATE_ENTRY' || error.code === 'ALREADY_EXISTS') {

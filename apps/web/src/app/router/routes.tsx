@@ -27,9 +27,7 @@ import { PortalLayout } from '../layouts/portal-layout.js';
 import { PublicLayout } from '../layouts/public-layout.js';
 import { NotFoundPage } from './not-found-page.js';
 import { FoundationPage } from './foundation-page.js';
-import { AdminDashboardPage } from '../../features/admin/system-admin-pages.js';
 import { StudentSignupPage } from '../../features/student-onboarding/student-signup-page.js';
-import { StudentNotificationsPage } from '../../features/student-portal/account-pages.js';
 
 export const appRoutes: RouteObject[] = [
   {
@@ -135,7 +133,13 @@ export const appRoutes: RouteObject[] = [
                 .StudentProfilePage,
             }),
           },
-          { path: 'notifications', element: <StudentNotificationsPage /> },
+          {
+            path: 'notifications',
+            lazy: async () => ({
+              Component: (await import('../../features/student-portal/account-pages.js'))
+                .StudentNotificationsPage,
+            }),
+          },
           {
             path: 'settings',
             lazy: async () => ({
@@ -260,7 +264,13 @@ export const appRoutes: RouteObject[] = [
               Component: (await import('../../features/timetable/timetable-page.js')).TimetablePage,
             }),
           },
-          { index: true, element: <AdminDashboardPage /> },
+          {
+            index: true,
+            lazy: async () => ({
+              Component: (await import('../../features/admin/system-admin-pages.js'))
+                .AdminDashboardPage,
+            }),
+          },
           { path: 'students/registrations', element: <AdminRegistrationQueuePage /> },
           {
             path: 'students/registrations/:registrationId',

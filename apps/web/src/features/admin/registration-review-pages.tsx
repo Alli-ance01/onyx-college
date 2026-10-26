@@ -561,14 +561,7 @@ export function AdminRegistrationReviewPage() {
         body: { status },
         method: 'POST',
       }),
-    onSuccess: async (_, vars) => {
-      toast({
-        tone: vars.status === 'VERIFIED' ? 'success' : 'warning',
-        title: vars.status === 'VERIFIED' ? 'Document verified' : 'Document rejected',
-        description: `Document review status updated to ${vars.status.toLowerCase()}.`,
-      });
-      await refresh();
-    },
+    onSuccess: refresh,
     onError: (err) => {
       toast({
         tone: 'danger',
