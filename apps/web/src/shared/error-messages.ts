@@ -33,16 +33,32 @@ interface ErrorContext {
 
 function resolveApiError(error: ApiClientError, context?: ErrorContext): string {
   // ── Validation details take precedence if available ───────────────────────
-  if (error.code === 'VALIDATION_ERROR') {
+  if (error.code === 'VALIDATION_FAILED' || error.code === 'VALIDATION_ERROR') {
     const details = error.details;
     if (details !== undefined && typeof details === 'object') {
+      const issues = (details as { issues?: unknown }).issues;
+      if (Array.isArray(issues) && issues.length > 0) {
+        const messages = (issues as { message?: unknown; path?: unknown }[])
+          .filter((issue) => typeof issue.message === 'string')
+          .map((issue) =>
+            typeof issue.path === 'string' && issue.path.length > 0
+              ? `${formatFieldName(issue.path)}: ${issue.message as string}`
+              : (issue.message as string),
+          );
+        if (messages.length > 0) return messages.join(' · ');
+      }
+
       const fieldErrors = Object.entries(details)
-        .filter(([, value]) => typeof value === 'string')
+        .filter(([key, value]) => key !== 'issues' && typeof value === 'string')
         .map(([key, value]) => `${formatFieldName(key)}: ${value as string}`)
         .join(' · ');
       if (fieldErrors.length > 0) return fieldErrors;
     }
-    if (error.message && error.message !== 'The request could not be completed.') {
+    if (
+      error.message &&
+      error.message !== 'The request could not be completed.' &&
+      error.message !== 'The request contains invalid values.'
+    ) {
       return error.message;
     }
     return 'Some fields contain invalid values. Please review and correct them.';

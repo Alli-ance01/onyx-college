@@ -266,7 +266,7 @@ input:focus-visible {
 }
 
 .teacher-setup-card {
-  width: min(100%, 38rem);
+  width: min(100%, 42rem);
 }
 
 .primary-button {

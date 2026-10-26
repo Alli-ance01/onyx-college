@@ -12,6 +12,7 @@ import {
 import { PasswordService } from '../../identity/infrastructure/password-service.js';
 import { UserModel } from '../../identity/infrastructure/user-model.js';
 import { OutboxEventModel } from '../../system/infrastructure/system-models.js';
+import { ensureStudentOnboardingReferenceData } from './reference-data.js';
 import {
   RegistrationFormConfigurationModel,
   StudentRegistrationModel,
@@ -45,10 +46,12 @@ export class StudentSignupService {
     if (existing !== null)
       throw new ConflictError('An account cannot be created with those details.');
 
-    const [passwordHash, configuration] = await Promise.all([
-      this.#passwords.hash(input.password),
-      RegistrationFormConfigurationModel.findOne({ status: 'ACTIVE' }),
-    ]);
+    const passwordHash = await this.#passwords.hash(input.password);
+    let configuration = await RegistrationFormConfigurationModel.findOne({ status: 'ACTIVE' });
+    if (configuration === null) {
+      await ensureStudentOnboardingReferenceData();
+      configuration = await RegistrationFormConfigurationModel.findOne({ status: 'ACTIVE' });
+    }
     if (configuration === null)
       throw new ConflictError('Student registration is not currently available.');
 

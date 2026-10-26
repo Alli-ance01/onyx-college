@@ -38,12 +38,27 @@ const signupSchema = z
     username: z
       .string()
       .trim()
-      .min(3)
+      .min(3, 'Username must be at least 3 characters.')
       .max(64)
-      .regex(/^[a-zA-Z0-9._-]+$/u),
-    email: z.email().max(254).optional(),
-    phone: z.string().trim().min(7).max(32).optional(),
-    password: z.string().min(12).max(128),
+      .regex(
+        /^[a-zA-Z0-9._-]+$/u,
+        'Username can only contain letters, numbers, dots, dashes, or underscores.',
+      ),
+    email: z
+      .email('Please enter a valid email address.')
+      .max(254)
+      .optional()
+      .or(z.literal(''))
+      .transform((val) => (val === '' ? undefined : val)),
+    phone: z
+      .string()
+      .trim()
+      .min(7, 'Phone number must be at least 7 characters.')
+      .max(32)
+      .optional()
+      .or(z.literal(''))
+      .transform((val) => (val === '' ? undefined : val)),
+    password: z.string().min(12, 'Password must be at least 12 characters.').max(128),
     passwordConfirmation: z.string().min(1).max(128),
   })
   .strict()

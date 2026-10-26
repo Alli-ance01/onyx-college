@@ -8,20 +8,29 @@ import { MongoConnection } from '../platform/database/mongo-connection.js';
 import { createLogger } from '../platform/logging/logger.js';
 
 async function main(): Promise<void> {
-  if (!process.stdin.isTTY || !process.stdout.isTTY) {
-    throw new Error('SUPER_ADMIN bootstrap requires an interactive terminal.');
-  }
+  let username = process.env.BOOTSTRAP_ADMIN_USERNAME?.trim();
+  let emailInput = process.env.BOOTSTRAP_ADMIN_EMAIL?.trim() ?? '';
 
-  const prompt = createInterface({ input: process.stdin, output: process.stdout });
-  const username = (await prompt.question('Initial SUPER_ADMIN username: ')).trim();
-  const emailInput = (await prompt.question('Email (optional): ')).trim();
-  const confirmation = (await prompt.question(`Create initial SUPER_ADMIN "${username}"? [y/N] `))
-    .trim()
-    .toLocaleLowerCase('en-US');
-  prompt.close();
+  if (!username) {
+    if (!process.stdin.isTTY || !process.stdout.isTTY) {
+      throw new Error(
+        'SUPER_ADMIN bootstrap requires an interactive terminal, or set BOOTSTRAP_ADMIN_USERNAME and optional BOOTSTRAP_ADMIN_EMAIL environment variables.',
+      );
+    }
 
-  if (username.length < 3 || confirmation !== 'y') {
-    throw new Error('Bootstrap cancelled or username is too short.');
+    const prompt = createInterface({ input: process.stdin, output: process.stdout });
+    username = (await prompt.question('Initial SUPER_ADMIN username: ')).trim();
+    emailInput = (await prompt.question('Email (optional): ')).trim();
+    const confirmation = (await prompt.question(`Create initial SUPER_ADMIN "${username}"? [y/N] `))
+      .trim()
+      .toLocaleLowerCase('en-US');
+    prompt.close();
+
+    if (username.length < 3 || confirmation !== 'y') {
+      throw new Error('Bootstrap cancelled or username is too short.');
+    }
+  } else if (username.length < 3) {
+    throw new Error('BOOTSTRAP_ADMIN_USERNAME must be at least 3 characters.');
   }
 
   const environment = loadEnvironment();

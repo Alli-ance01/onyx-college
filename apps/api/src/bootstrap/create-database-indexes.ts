@@ -1,4 +1,5 @@
 import { loadEnvironment } from '../config/environment.js';
+import { ensureStudentOnboardingReferenceData } from '../modules/student-registration/application/reference-data.js';
 import { applicationModels } from '../platform/database/application-models.js';
 import { cleanupLegacyIndexes } from '../platform/database/legacy-index-cleanup.js';
 import { MongoConnection } from '../platform/database/mongo-connection.js';
@@ -18,8 +19,12 @@ async function main(): Promise<void> {
       logger.info({ model: model.modelName }, 'Database indexes verified');
     }
 
+    await ensureStudentOnboardingReferenceData();
+
     process.stdout.write(
-      'Database indexes verified for ' + String(applicationModels.length) + ' models.\n',
+      'Database indexes verified and student reference data initialized for ' +
+        String(applicationModels.length) +
+        ' models.\n',
     );
   } finally {
     await database.disconnect();

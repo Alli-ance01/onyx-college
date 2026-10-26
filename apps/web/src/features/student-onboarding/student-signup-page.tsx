@@ -22,7 +22,7 @@ const publicClient = new ApiClient({ baseUrl: publicEnvironment.VITE_API_BASE_UR
 export function StudentSignupPage() {
   const auth = useAuthSession();
   const navigate = useNavigate();
-  const [error, setError] = useState<string>();
+  const [error, setError] = useState<{ code?: string | undefined; message: string }>();
   const {
     formState: { errors, isSubmitting },
     handleSubmit,
@@ -32,16 +32,33 @@ export function StudentSignupPage() {
   const submit = handleSubmit(async (values) => {
     setError(undefined);
     try {
+      const email = values.email?.trim();
+      const phone = values.phone?.trim();
       await publicClient.request<SuccessEnvelope<{ registrationId: string }>>('/student-signups', {
-        body: values,
+        body: {
+          username: values.username.trim(),
+          password: values.password,
+          passwordConfirmation: values.passwordConfirmation,
+          ...(email && email.length > 0 ? { email } : {}),
+          ...(phone && phone.length > 0 ? { phone } : {}),
+        },
         method: 'POST',
       });
-      await auth.login({ identifier: values.username, password: values.password });
+      await auth.login({ identifier: values.username.trim(), password: values.password });
       void navigate('/onboarding', { replace: true });
     } catch (caught) {
-      setError(
-        resolveErrorMessage(caught, { action: 'create applicant account', entity: 'account' }),
-      );
+      const message = resolveErrorMessage(caught, {
+        action: 'create applicant account',
+        entity: 'account',
+      });
+      const code =
+        typeof caught === 'object' &&
+        caught !== null &&
+        'code' in caught &&
+        typeof caught.code === 'string'
+          ? caught.code
+          : undefined;
+      setError({ code, message });
     }
   });
 
@@ -83,7 +100,12 @@ export function StudentSignupPage() {
         </p>
         {error === undefined ? null : (
           <div className="form-alert form-alert--error" role="alert">
-            {error}
+            <p>{error.message}</p>
+            {error.code !== undefined ? (
+              <small style={{ display: 'block', marginTop: '0.35rem', opacity: 0.85 }}>
+                Error code: {error.code}
+              </small>
+            ) : null}
           </div>
         )}
         <form

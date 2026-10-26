@@ -15,7 +15,7 @@ interface SetupResponse {
 export function TeacherSetupPage() {
   const [search] = useSearchParams();
   const token = search.get('token') ?? '';
-  const [error, setError] = useState<string>();
+  const [error, setError] = useState<{ code?: string | undefined; message: string }>();
   const [pending, setPending] = useState(false);
   const [completed, setCompleted] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -28,11 +28,11 @@ export function TeacherSetupPage() {
     const password = formText(form, 'password');
     const passwordConfirmation = formText(form, 'passwordConfirmation');
     if (password.length < 12) {
-      setError('Password must be at least 12 characters.');
+      setError({ message: 'Password must be at least 12 characters.' });
       return;
     }
     if (password !== passwordConfirmation) {
-      setError('The passwords do not match.');
+      setError({ message: 'The passwords do not match.' });
       return;
     }
     setPending(true);
@@ -54,14 +54,21 @@ export function TeacherSetupPage() {
       });
       setCompleted(true);
     } catch (cause) {
-      setError(
+      const message =
         cause instanceof ApiClientError
           ? cause.message
           : resolveErrorMessage(cause, {
               action: 'complete teacher account setup',
               entity: 'teacher account',
-            }),
-      );
+            });
+      const code =
+        typeof cause === 'object' &&
+        cause !== null &&
+        'code' in cause &&
+        typeof cause.code === 'string'
+          ? cause.code
+          : undefined;
+      setError({ code, message });
     } finally {
       setPending(false);
     }
@@ -161,144 +168,163 @@ export function TeacherSetupPage() {
 
         {error !== undefined ? (
           <div className="form-alert form-alert--error" role="alert">
-            {error}
+            <p>{error.message}</p>
+            {error.code !== undefined ? (
+              <small style={{ display: 'block', marginTop: '0.35rem', opacity: 0.85 }}>
+                Error code: {error.code}
+              </small>
+            ) : null}
           </div>
         ) : null}
 
         <form className="auth-form" onSubmit={(event) => void submit(event)}>
-          <div className="form-grid form-grid--two">
+          <div className="teacher-setup-section">
+            <p className="teacher-setup-section-title">Personal Details</p>
+            <div className="form-grid form-grid--two">
+              <label className="auth-field">
+                <span>First name</span>
+                <input
+                  autoComplete="given-name"
+                  name="firstName"
+                  placeholder="e.g. John"
+                  required
+                />
+              </label>
+              <label className="auth-field">
+                <span>Surname</span>
+                <input
+                  autoComplete="family-name"
+                  name="lastName"
+                  placeholder="e.g. Adeyemi"
+                  required
+                />
+              </label>
+            </div>
+
+            <div className="form-grid form-grid--two">
+              <label className="auth-field">
+                <span>
+                  Middle name <span className="optional-label">Optional</span>
+                </span>
+                <input
+                  autoComplete="additional-name"
+                  name="middleName"
+                  placeholder="e.g. Babatunde"
+                />
+              </label>
+              <label className="auth-field">
+                <span>
+                  Phone number <span className="optional-label">Optional</span>
+                </span>
+                <input
+                  autoComplete="tel"
+                  inputMode="tel"
+                  name="phone"
+                  placeholder="e.g. +234 801 234 5678"
+                  type="tel"
+                />
+              </label>
+            </div>
+          </div>
+
+          <div className="teacher-setup-section">
+            <p className="teacher-setup-section-title">Professional & Address</p>
             <label className="auth-field">
-              <span>First name</span>
-              <input autoComplete="given-name" name="firstName" placeholder="e.g. John" required />
+              <span>
+                Academic & professional qualifications{' '}
+                <span className="optional-label">Optional</span>
+              </span>
+              <textarea
+                name="qualifications"
+                placeholder="e.g. B.Sc Mathematics (Unilag), PGDE, TRCN Certified"
+                rows={2}
+              />
             </label>
+
             <label className="auth-field">
-              <span>Surname</span>
+              <span>
+                Residential address <span className="optional-label">Optional</span>
+              </span>
+              <textarea
+                name="address"
+                placeholder="e.g. 14 Admiralty Way, Lekki Phase 1, Lagos"
+                rows={2}
+              />
+            </label>
+          </div>
+
+          <div className="teacher-setup-section">
+            <p className="teacher-setup-section-title">Portal Credentials</p>
+            <label className="auth-field">
+              <span>Choose a username</span>
               <input
-                autoComplete="family-name"
-                name="lastName"
-                placeholder="e.g. Adeyemi"
+                autoComplete="username"
+                minLength={3}
+                name="username"
+                placeholder="e.g. j.adeyemi"
                 required
               />
             </label>
-          </div>
 
-          <div className="form-grid form-grid--two">
-            <label className="auth-field">
+            <div className="form-grid form-grid--two">
+              <label className="auth-field">
+                <span>Password</span>
+                <span className="auth-input-wrap">
+                  <input
+                    autoComplete="new-password"
+                    minLength={12}
+                    name="password"
+                    required
+                    type={showPassword ? 'text' : 'password'}
+                  />
+                  <button
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    className="password-toggle"
+                    onClick={() => {
+                      setShowPassword((prev) => !prev);
+                    }}
+                    type="button"
+                  >
+                    {showPassword ? 'Hide' : 'Show'}
+                  </button>
+                </span>
+              </label>
+
+              <label className="auth-field">
+                <span>Confirm password</span>
+                <span className="auth-input-wrap">
+                  <input
+                    autoComplete="new-password"
+                    minLength={12}
+                    name="passwordConfirmation"
+                    required
+                    type={showConfirmPassword ? 'text' : 'password'}
+                  />
+                  <button
+                    aria-label={
+                      showConfirmPassword
+                        ? 'Hide password confirmation'
+                        : 'Show password confirmation'
+                    }
+                    className="password-toggle"
+                    onClick={() => {
+                      setShowConfirmPassword((prev) => !prev);
+                    }}
+                    type="button"
+                  >
+                    {showConfirmPassword ? 'Hide' : 'Show'}
+                  </button>
+                </span>
+              </label>
+            </div>
+
+            <p className="auth-password-note">
+              <span aria-hidden="true">ℹ</span>
               <span>
-                Middle name <span className="optional-label">Optional</span>
+                Use at least 12 characters. Choose a unique password not shared with other accounts.
               </span>
-              <input
-                autoComplete="additional-name"
-                name="middleName"
-                placeholder="e.g. Babatunde"
-              />
-            </label>
-            <label className="auth-field">
-              <span>
-                Phone number <span className="optional-label">Optional</span>
-              </span>
-              <input
-                autoComplete="tel"
-                inputMode="tel"
-                name="phone"
-                placeholder="e.g. +234 801 234 5678"
-                type="tel"
-              />
-            </label>
+            </p>
           </div>
-
-          <label className="auth-field">
-            <span>
-              Residential address <span className="optional-label">Optional</span>
-            </span>
-            <textarea
-              name="address"
-              placeholder="e.g. 14 Admiralty Way, Lekki Phase 1, Lagos"
-              rows={2}
-            />
-          </label>
-
-          <label className="auth-field">
-            <span>
-              Academic & professional qualifications{' '}
-              <span className="optional-label">Optional</span>
-            </span>
-            <textarea
-              name="qualifications"
-              placeholder="e.g. B.Sc Mathematics (Unilag), PGDE, TRCN Certified"
-              rows={2}
-            />
-          </label>
-
-          <label className="auth-field">
-            <span>Choose a username</span>
-            <input
-              autoComplete="username"
-              minLength={3}
-              name="username"
-              placeholder="e.g. j.adeyemi"
-              required
-            />
-          </label>
-
-          <div className="form-grid form-grid--two">
-            <label className="auth-field">
-              <span>Password</span>
-              <span className="auth-input-wrap">
-                <input
-                  autoComplete="new-password"
-                  minLength={12}
-                  name="password"
-                  required
-                  type={showPassword ? 'text' : 'password'}
-                />
-                <button
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  className="password-toggle"
-                  onClick={() => {
-                    setShowPassword((prev) => !prev);
-                  }}
-                  type="button"
-                >
-                  {showPassword ? 'Hide' : 'Show'}
-                </button>
-              </span>
-            </label>
-
-            <label className="auth-field">
-              <span>Confirm password</span>
-              <span className="auth-input-wrap">
-                <input
-                  autoComplete="new-password"
-                  minLength={12}
-                  name="passwordConfirmation"
-                  required
-                  type={showConfirmPassword ? 'text' : 'password'}
-                />
-                <button
-                  aria-label={
-                    showConfirmPassword
-                      ? 'Hide password confirmation'
-                      : 'Show password confirmation'
-                  }
-                  className="password-toggle"
-                  onClick={() => {
-                    setShowConfirmPassword((prev) => !prev);
-                  }}
-                  type="button"
-                >
-                  {showConfirmPassword ? 'Hide' : 'Show'}
-                </button>
-              </span>
-            </label>
-          </div>
-
-          <p className="auth-password-note">
-            <span aria-hidden="true">ℹ</span>
-            <span>
-              Use at least 12 characters. Choose a unique password not shared with other accounts.
-            </span>
-          </p>
 
           <button
             className="primary-button auth-submit"
