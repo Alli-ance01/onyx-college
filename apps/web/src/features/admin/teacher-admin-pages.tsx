@@ -2,7 +2,6 @@ import type { TeacherDto, TeacherInvitationDto, TeacherRegistrationDto } from '@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type SyntheticEvent } from 'react';
 
-import { ApiClientError } from '../../lib/api/index.js';
 import { useAuthSession } from '../../lib/auth/use-auth-session.js';
 import { resolveErrorMessage } from '../../shared/error-messages.js';
 import { formText } from '../../shared/forms/form-data.js';
@@ -18,7 +17,10 @@ import { adminApi, adminQueryKeys } from './admin-api.js';
 
 function errorMessage(error: Error | null): string | undefined {
   if (error === null) return undefined;
-  return resolveErrorMessage(error, { action: 'complete teacher administration', entity: 'teacher' });
+  return resolveErrorMessage(error, {
+    action: 'complete teacher administration',
+    entity: 'teacher',
+  });
 }
 
 function useTeachers() {

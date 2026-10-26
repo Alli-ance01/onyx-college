@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState, type SyntheticEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 
-import { ApiClientError } from '../../lib/api/index.js';
 import { useAuthSession } from '../../lib/auth/use-auth-session.js';
 import { resolveErrorMessage } from '../../shared/error-messages.js';
 import { useUnsavedChanges } from '../../shared/hooks/use-unsaved-changes.js';

@@ -2866,7 +2866,9 @@ td small {
   border: 1px solid var(--color-neutral-200);
   border-radius: var(--radius-md);
   background: var(--color-white);
-  box-shadow: 0 12px 36px rgb(9 20 38 / 14%), 0 2px 8px rgb(9 20 38 / 6%);
+  box-shadow:
+    0 12px 36px rgb(9 20 38 / 14%),
+    0 2px 8px rgb(9 20 38 / 6%);
   pointer-events: auto;
   animation: toast-enter 300ms cubic-bezier(0.22, 0.68, 0, 1.1) both;
 }
@@ -3066,8 +3068,13 @@ textarea[aria-invalid='true']:focus {
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
 }
 
 /* ── Button interaction refinements ────────────────────────────────────── */
@@ -3113,8 +3120,12 @@ textarea[aria-invalid='true']:focus {
 }
 
 @keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* ── Additional mobile improvements ────────────────────────────────────── */

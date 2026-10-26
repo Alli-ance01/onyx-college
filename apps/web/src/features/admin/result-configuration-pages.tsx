@@ -2,7 +2,6 @@ import type { AssessmentSchemeDto, GradingSchemeDto } from '@onyx/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type SyntheticEvent } from 'react';
 
-import { ApiClientError } from '../../lib/api/index.js';
 import { useAuthSession } from '../../lib/auth/use-auth-session.js';
 import { resolveErrorMessage } from '../../shared/error-messages.js';
 import { formText } from '../../shared/forms/form-data.js';
@@ -30,7 +29,10 @@ interface BandDraft {
 
 function errorMessage(error: Error | null): string | undefined {
   if (error === null) return undefined;
-  return resolveErrorMessage(error, { action: 'save grading or assessment configuration', entity: 'configuration scheme' });
+  return resolveErrorMessage(error, {
+    action: 'save grading or assessment configuration',
+    entity: 'configuration scheme',
+  });
 }
 
 export function AdminAssessmentSchemesPage() {

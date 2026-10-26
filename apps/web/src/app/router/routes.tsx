@@ -29,7 +29,6 @@ import { NotFoundPage } from './not-found-page.js';
 import { FoundationPage } from './foundation-page.js';
 import { AdminDashboardPage } from '../../features/admin/system-admin-pages.js';
 import { StudentSignupPage } from '../../features/student-onboarding/student-signup-page.js';
-import { PortalNotificationsPage } from '../../features/account/portal-account-pages.js';
 import { StudentNotificationsPage } from '../../features/student-portal/account-pages.js';
 
 export const appRoutes: RouteObject[] = [

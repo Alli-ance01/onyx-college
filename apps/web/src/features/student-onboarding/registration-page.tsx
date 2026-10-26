@@ -14,7 +14,7 @@ import { useNavigate } from 'react-router';
 import { ApiClientError } from '../../lib/api/api-client.js';
 import { useAuthSession } from '../../lib/auth/use-auth-session.js';
 import { resolveErrorMessage } from '../../shared/error-messages.js';
-import { Button, StatusBadge, useToast } from '../../shared/ui/index.js';
+import { Button, StatusBadge } from '../../shared/ui/index.js';
 import { ErrorState } from '../../shared/ui/async-state.js';
 import { DocumentViewButton } from './document-view-button.js';
 
@@ -42,7 +42,10 @@ function ErrorMessage({ error }: { error: unknown }) {
     <div className="form-alert form-alert--error" role="alert">
       {typeof error === 'string'
         ? error
-        : resolveErrorMessage(error, { action: 'save registration details', entity: 'registration' })}
+        : resolveErrorMessage(error, {
+            action: 'save registration details',
+            entity: 'registration',
+          })}
       {error instanceof ApiClientError && error.requestId !== undefined ? (
         <small>Reference: {error.requestId}</small>
       ) : null}

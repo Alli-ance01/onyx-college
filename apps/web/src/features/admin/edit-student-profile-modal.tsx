@@ -2,7 +2,6 @@ import type { StudentProfileDto } from '@onyx/contracts';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, type SyntheticEvent } from 'react';
 
-import { ApiClientError } from '../../lib/api/api-client.js';
 import { useAuthSession } from '../../lib/auth/use-auth-session.js';
 import { resolveErrorMessage } from '../../shared/error-messages.js';
 import { Button, FormField, useToast } from '../../shared/ui/index.js';

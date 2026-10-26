@@ -25,6 +25,7 @@ const ToastContext = createContext<ToastContextValue>({
   toast: () => undefined,
 });
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useToast() {
   return useContext(ToastContext);
 }
@@ -86,7 +87,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const [messages, setMessages] = useState<ToastMessage[]>([]);
 
   const toast = useCallback((options: Omit<ToastMessage, 'id'>) => {
-    const id = `toast_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+    const id = `toast_${String(Date.now())}_${Math.random().toString(36).slice(2, 6)}`;
     setMessages((current) => [...current.slice(-4), { ...options, id }]);
   }, []);
 

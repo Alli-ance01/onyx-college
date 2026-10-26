@@ -520,7 +520,10 @@ export function AdminCorrectionQueuePage() {
       toast({
         tone: 'danger',
         title: 'Correction decision failed',
-        description: resolveErrorMessage(err, { action: 'update correction request', entity: 'correction' }),
+        description: resolveErrorMessage(err, {
+          action: 'update correction request',
+          entity: 'correction',
+        }),
       });
     },
   });

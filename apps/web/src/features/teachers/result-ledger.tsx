@@ -27,7 +27,6 @@ import {
   type RefObject,
 } from 'react';
 
-import { ApiClientError } from '../../lib/api/index.js';
 import { useAuthSession } from '../../lib/auth/use-auth-session.js';
 import { resolveErrorMessage } from '../../shared/error-messages.js';
 import { Button, FormField } from '../../shared/ui/index.js';

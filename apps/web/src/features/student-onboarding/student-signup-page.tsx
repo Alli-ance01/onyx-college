@@ -39,7 +39,9 @@ export function StudentSignupPage() {
       await auth.login({ identifier: values.username, password: values.password });
       void navigate('/onboarding', { replace: true });
     } catch (caught) {
-      setError(resolveErrorMessage(caught, { action: 'create applicant account', entity: 'account' }));
+      setError(
+        resolveErrorMessage(caught, { action: 'create applicant account', entity: 'account' }),
+      );
     }
   });
 

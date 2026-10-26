@@ -16,7 +16,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router';
 
-import { ApiClientError } from '../../lib/api/api-client.js';
 import { useAuthSession } from '../../lib/auth/use-auth-session.js';
 import { resolveErrorMessage } from '../../shared/error-messages.js';
 import {
@@ -105,7 +104,10 @@ const CORRECTION_FIELD_GROUPS: {
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
 function apiError(error: unknown): string {
-  return resolveErrorMessage(error, { action: 'complete registration review', entity: 'registration' });
+  return resolveErrorMessage(error, {
+    action: 'complete registration review',
+    entity: 'registration',
+  });
 }
 
 function camelToWords(key: string): string {
