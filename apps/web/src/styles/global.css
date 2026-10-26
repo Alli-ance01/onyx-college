@@ -242,7 +242,8 @@ input:focus-visible {
   font-weight: 700;
 }
 
-.auth-form input {
+.auth-form input,
+.auth-form textarea {
   width: 100%;
   min-height: 2.75rem;
   padding: var(--space-2) var(--space-3);
@@ -250,10 +251,22 @@ input:focus-visible {
   border-radius: var(--radius-sm);
   color: var(--color-neutral-950);
   background: var(--color-white);
+  font-family: inherit;
+  font-size: inherit;
 }
 
-.auth-form input:hover {
+.auth-form textarea {
+  min-height: 4.5rem;
+  resize: vertical;
+}
+
+.auth-form input:hover,
+.auth-form textarea:hover {
   border-color: var(--color-neutral-500);
+}
+
+.teacher-setup-card {
+  width: min(100%, 38rem);
 }
 
 .primary-button {

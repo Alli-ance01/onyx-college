@@ -3,8 +3,9 @@ import { useState, type SyntheticEvent } from 'react';
 import { Link, useSearchParams } from 'react-router';
 
 import { apiClient, ApiClientError } from '../../lib/api/index.js';
+import { resolveErrorMessage } from '../../shared/error-messages.js';
 import { formText } from '../../shared/forms/form-data.js';
-import { Button, FormField, Panel } from '../../shared/ui/index.js';
+import { SchoolCrest } from '../../shared/ui/brand.js';
 
 interface SetupResponse {
   registrationId: string;
@@ -17,6 +18,8 @@ export function TeacherSetupPage() {
   const [error, setError] = useState<string>();
   const [pending, setPending] = useState(false);
   const [completed, setCompleted] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   async function submit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -24,6 +27,10 @@ export function TeacherSetupPage() {
     const form = new FormData(event.currentTarget);
     const password = formText(form, 'password');
     const passwordConfirmation = formText(form, 'passwordConfirmation');
+    if (password.length < 12) {
+      setError('Password must be at least 12 characters.');
+      return;
+    }
     if (password !== passwordConfirmation) {
       setError('The passwords do not match.');
       return;
@@ -50,7 +57,10 @@ export function TeacherSetupPage() {
       setError(
         cause instanceof ApiClientError
           ? cause.message
-          : 'Account setup could not be completed. Please try again.',
+          : resolveErrorMessage(cause, {
+              action: 'complete teacher account setup',
+              entity: 'teacher account',
+            }),
       );
     } finally {
       setPending(false);
@@ -59,94 +69,251 @@ export function TeacherSetupPage() {
 
   if (completed) {
     return (
-      <main className="auth-page">
-        <Panel title="Account setup complete">
-          <p>Your profile has been submitted for school approval.</p>
-          <Link className="ui-button ui-button--primary" to="/auth/login">
-            Continue to sign in
-          </Link>
-        </Panel>
+      <main className="auth-content auth-content--split">
+        <aside className="auth-aside" aria-label="Faculty onboarding guidance">
+          <SchoolCrest className="school-crest--auth" />
+          <p className="eyebrow">Faculty Onboarding</p>
+          <h2>Welcome to Onyx College.</h2>
+          <p className="auth-aside__description">
+            Your educator profile and credentials have been securely registered with the school
+            administration.
+          </p>
+          <p className="auth-aside__footer">Onyx College · We trust in excellence</p>
+        </aside>
+
+        <section
+          className="auth-card surface teacher-setup-card"
+          aria-labelledby="complete-heading"
+        >
+          <div className="auth-card__topline">
+            <span>Status</span>
+            <span>Submission Received</span>
+          </div>
+          <p className="eyebrow">Account setup complete</p>
+          <h1 id="complete-heading">Profile submitted for review.</h1>
+          <p className="auth-card__intro">
+            Your educator profile and credentials have been submitted. An administrator will review
+            your account, assign your teaching classes and subjects, and activate full portal
+            access.
+          </p>
+          <div style={{ marginTop: '2.5rem' }}>
+            <Link className="primary-button auth-submit" to="/auth/login">
+              <span>Proceed to sign in</span>
+              <span aria-hidden="true">→</span>
+            </Link>
+          </div>
+          <p className="auth-card__footer">
+            Need assistance? Contact the school office or system administrator.
+          </p>
+        </section>
       </main>
     );
   }
 
   return (
-    <main className="auth-page">
-      <header className="auth-page__heading">
-        <p className="eyebrow">Private staff invitation</p>
-        <h1>Set up your teacher account</h1>
-        <p>
-          Complete your profile and choose secure credentials. Access remains restricted until
-          approval.
+    <main className="auth-content auth-content--split">
+      <aside className="auth-aside" aria-label="Faculty onboarding guidance">
+        <SchoolCrest className="school-crest--auth" />
+        <p className="eyebrow">Faculty Onboarding</p>
+        <h2>Join the Onyx teaching faculty.</h2>
+        <p className="auth-aside__description">
+          Welcome to Onyx College. Set up your educator profile and secure credentials to prepare
+          your academic workspace.
         </p>
-      </header>
-      <form className="auth-card form-stack" onSubmit={(event) => void submit(event)}>
+        <ol className="auth-aside__steps">
+          <li>
+            <span aria-hidden="true">01</span>
+            <span>Accept your private staff invitation.</span>
+          </li>
+          <li>
+            <span aria-hidden="true">02</span>
+            <span>Provide your teaching credentials and contact details.</span>
+          </li>
+          <li>
+            <span aria-hidden="true">03</span>
+            <span>Await administrator review and class assignments.</span>
+          </li>
+        </ol>
+        <p className="auth-aside__footer">Onyx College · We trust in excellence</p>
+      </aside>
+
+      <section
+        className="auth-card surface teacher-setup-card"
+        aria-labelledby="teacher-setup-title"
+      >
+        <div className="auth-card__topline">
+          <span>Staff Invitation</span>
+          <span>Step 01</span>
+        </div>
+        <p className="eyebrow">Private invitation</p>
+        <h1 id="teacher-setup-title">Set up your teacher account.</h1>
+        <p className="auth-card__intro">
+          Complete your profile and choose your login credentials. Academic assignments and portal
+          access are granted following administrative review.
+        </p>
+
         {token === '' ? (
-          <p className="form-alert form-alert--error" role="alert">
-            This setup link is incomplete. Ask the school for a new invitation.
-          </p>
+          <div className="form-alert form-alert--error" role="alert">
+            This setup link is incomplete or missing its invitation token. Please check your
+            invitation email or contact the school administrator for a new link.
+          </div>
         ) : null}
-        <div className="form-grid form-grid--two">
-          <FormField controlId="teacher-first-name" label="First name">
-            <input name="firstName" required autoComplete="given-name" />
-          </FormField>
-          <FormField controlId="teacher-last-name" label="Surname">
-            <input name="lastName" required autoComplete="family-name" />
-          </FormField>
-          <FormField controlId="teacher-middle-name" label="Middle name" optional>
-            <input name="middleName" autoComplete="additional-name" />
-          </FormField>
-          <FormField controlId="teacher-phone" label="Phone" optional>
-            <input name="phone" autoComplete="tel" inputMode="tel" />
-          </FormField>
-        </div>
-        <FormField controlId="teacher-address" label="Address" optional>
-          <textarea name="address" rows={3} />
-        </FormField>
-        <FormField controlId="teacher-qualifications" label="Qualifications" optional>
-          <textarea name="qualifications" rows={3} />
-        </FormField>
-        <FormField controlId="teacher-username" label="Username">
-          <input name="username" required autoComplete="username" minLength={3} />
-        </FormField>
-        <div className="form-grid form-grid--two">
-          <FormField
-            controlId="teacher-password"
-            label="Password"
-            hint="Use at least 12 characters."
-          >
-            <input
-              name="password"
-              required
-              autoComplete="new-password"
-              minLength={12}
-              type="password"
-            />
-          </FormField>
-          <FormField controlId="teacher-password-confirmation" label="Confirm password">
-            <input
-              name="passwordConfirmation"
-              required
-              autoComplete="new-password"
-              minLength={12}
-              type="password"
-            />
-          </FormField>
-        </div>
-        {error === undefined ? null : (
-          <p className="form-alert form-alert--error" role="alert">
+
+        {error !== undefined ? (
+          <div className="form-alert form-alert--error" role="alert">
             {error}
+          </div>
+        ) : null}
+
+        <form className="auth-form" onSubmit={(event) => void submit(event)}>
+          <div className="form-grid form-grid--two">
+            <label className="auth-field">
+              <span>First name</span>
+              <input autoComplete="given-name" name="firstName" placeholder="e.g. John" required />
+            </label>
+            <label className="auth-field">
+              <span>Surname</span>
+              <input
+                autoComplete="family-name"
+                name="lastName"
+                placeholder="e.g. Adeyemi"
+                required
+              />
+            </label>
+          </div>
+
+          <div className="form-grid form-grid--two">
+            <label className="auth-field">
+              <span>
+                Middle name <span className="optional-label">Optional</span>
+              </span>
+              <input
+                autoComplete="additional-name"
+                name="middleName"
+                placeholder="e.g. Babatunde"
+              />
+            </label>
+            <label className="auth-field">
+              <span>
+                Phone number <span className="optional-label">Optional</span>
+              </span>
+              <input
+                autoComplete="tel"
+                inputMode="tel"
+                name="phone"
+                placeholder="e.g. +234 801 234 5678"
+                type="tel"
+              />
+            </label>
+          </div>
+
+          <label className="auth-field">
+            <span>
+              Residential address <span className="optional-label">Optional</span>
+            </span>
+            <textarea
+              name="address"
+              placeholder="e.g. 14 Admiralty Way, Lekki Phase 1, Lagos"
+              rows={2}
+            />
+          </label>
+
+          <label className="auth-field">
+            <span>
+              Academic & professional qualifications{' '}
+              <span className="optional-label">Optional</span>
+            </span>
+            <textarea
+              name="qualifications"
+              placeholder="e.g. B.Sc Mathematics (Unilag), PGDE, TRCN Certified"
+              rows={2}
+            />
+          </label>
+
+          <label className="auth-field">
+            <span>Choose a username</span>
+            <input
+              autoComplete="username"
+              minLength={3}
+              name="username"
+              placeholder="e.g. j.adeyemi"
+              required
+            />
+          </label>
+
+          <div className="form-grid form-grid--two">
+            <label className="auth-field">
+              <span>Password</span>
+              <span className="auth-input-wrap">
+                <input
+                  autoComplete="new-password"
+                  minLength={12}
+                  name="password"
+                  required
+                  type={showPassword ? 'text' : 'password'}
+                />
+                <button
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  className="password-toggle"
+                  onClick={() => {
+                    setShowPassword((prev) => !prev);
+                  }}
+                  type="button"
+                >
+                  {showPassword ? 'Hide' : 'Show'}
+                </button>
+              </span>
+            </label>
+
+            <label className="auth-field">
+              <span>Confirm password</span>
+              <span className="auth-input-wrap">
+                <input
+                  autoComplete="new-password"
+                  minLength={12}
+                  name="passwordConfirmation"
+                  required
+                  type={showConfirmPassword ? 'text' : 'password'}
+                />
+                <button
+                  aria-label={
+                    showConfirmPassword
+                      ? 'Hide password confirmation'
+                      : 'Show password confirmation'
+                  }
+                  className="password-toggle"
+                  onClick={() => {
+                    setShowConfirmPassword((prev) => !prev);
+                  }}
+                  type="button"
+                >
+                  {showConfirmPassword ? 'Hide' : 'Show'}
+                </button>
+              </span>
+            </label>
+          </div>
+
+          <p className="auth-password-note">
+            <span aria-hidden="true">ℹ</span>
+            <span>
+              Use at least 12 characters. Choose a unique password not shared with other accounts.
+            </span>
           </p>
-        )}
-        <Button
-          disabled={token === ''}
-          loading={pending}
-          loadingLabel="Creating account"
-          type="submit"
-        >
-          Complete account setup
-        </Button>
-      </form>
+
+          <button
+            className="primary-button auth-submit"
+            disabled={pending || token === ''}
+            type="submit"
+          >
+            <span>{pending ? 'Submitting profile…' : 'Complete teacher setup'}</span>
+            <span aria-hidden="true">↗</span>
+          </button>
+        </form>
+
+        <p className="auth-card__footer">
+          Already completed setup? <Link to="/auth/login">Sign in to your portal</Link>
+        </p>
+      </section>
     </main>
   );
 }
