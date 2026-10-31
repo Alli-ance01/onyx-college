@@ -1,4 +1,4 @@
-import { MongoDBContainer } from '@testcontainers/mongodb';
+import { createMongoTestContainer, replicaSetConnectionString } from '../mongodb-test-container.js';
 import { z } from 'zod';
 import { accounts, testPassword } from './accounts.js';
 import mongoose from 'mongoose';
@@ -26,11 +26,8 @@ function text(response: request.Response, ...path: readonly (string | number)[])
 }
 
 const origin = 'http://localhost:4173';
-const container = await new MongoDBContainer('mongo:8.0').start();
-const connection = new URL(container.getConnectionString());
-connection.searchParams.set('replicaSet', 'rs0');
-connection.searchParams.set('directConnection', 'true');
-const uri = connection.toString();
+const container = await createMongoTestContainer().start();
+const uri = replicaSetConnectionString(container);
 await mongoose.connect(uri, { dbName: 'onyx_browser_tests' });
 const environment = loadEnvironment({
   MONGODB_URI: uri,

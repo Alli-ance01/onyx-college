@@ -1,8 +1,9 @@
 import { ResultCorrectionService } from '../src/modules/results/application/result-correction-service.js';
 import { SequenceCounterModel } from '../src/modules/system/infrastructure/system-models.js';
-import { MongoDBContainer, type StartedMongoDBContainer } from '@testcontainers/mongodb';
+import type { StartedMongoDBContainer } from '@testcontainers/mongodb';
 import mongoose from 'mongoose';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createMongoTestContainer, replicaSetConnectionString } from './mongodb-test-container.js';
 
 import {
   AcademicSessionModel,
@@ -79,11 +80,9 @@ const assignments = new AssignmentService(
 );
 
 beforeAll(async () => {
-  container = await new MongoDBContainer('mongo:8.0').start();
-  const uri = new URL(container.getConnectionString());
-  uri.searchParams.set('directConnection', 'true');
-  uri.searchParams.set('replicaSet', 'rs0');
-  await mongoose.connect(uri.toString(), { dbName: 'onyx_teacher_resource_access' });
+  container = await createMongoTestContainer().start();
+  const uri = replicaSetConnectionString(container);
+  await mongoose.connect(uri, { dbName: 'onyx_teacher_resource_access' });
   await AcademicSessionModel.create({ _id: id('session'), label: '2026/2027' });
   await ClassLevelModel.create({
     _id: id('level'),

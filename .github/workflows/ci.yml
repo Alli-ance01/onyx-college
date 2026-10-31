@@ -20,6 +20,8 @@ jobs:
     name: Verify Node 22.19.0 workspace
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    env:
+      GLIBC_TUNABLES: glibc.pthread.rseq=1
 
     steps:
       - name: Check out repository

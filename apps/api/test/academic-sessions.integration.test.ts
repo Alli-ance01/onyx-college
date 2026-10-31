@@ -1,4 +1,4 @@
-import { MongoDBContainer, type StartedMongoDBContainer } from '@testcontainers/mongodb';
+import type { StartedMongoDBContainer } from '@testcontainers/mongodb';
 import mongoose from 'mongoose';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
@@ -9,6 +9,7 @@ import {
 } from '../src/modules/academics/infrastructure/academic-models.js';
 import { AuditWriter } from '../src/modules/audit/application/audit-writer.js';
 import { AuditLogModel } from '../src/modules/audit/infrastructure/audit-log-model.js';
+import { createMongoTestContainer, replicaSetConnectionString } from './mongodb-test-container.js';
 
 let container: StartedMongoDBContainer | undefined;
 const academics = new AcademicAdminService();
@@ -18,11 +19,10 @@ const actor = {
 };
 
 beforeAll(async () => {
-  container = await new MongoDBContainer('mongo:8.0').start();
-  const uri = new URL(container.getConnectionString());
-  uri.searchParams.set('directConnection', 'true');
-  uri.searchParams.set('replicaSet', 'rs0');
-  await mongoose.connect(uri.toString(), { dbName: 'academic_session_tests' });
+  container = await createMongoTestContainer().start();
+  await mongoose.connect(replicaSetConnectionString(container), {
+    dbName: 'academic_session_tests',
+  });
   await Promise.all([AcademicSessionModel.init(), TermModel.init(), AuditLogModel.init()]);
 });
 afterAll(async () => {

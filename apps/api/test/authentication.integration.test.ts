@@ -1,4 +1,4 @@
-import { MongoDBContainer, type StartedMongoDBContainer } from '@testcontainers/mongodb';
+import type { StartedMongoDBContainer } from '@testcontainers/mongodb';
 import mongoose from 'mongoose';
 import pino from 'pino';
 import request from 'supertest';
@@ -13,6 +13,7 @@ import { CredentialCrypto } from '../src/modules/identity/infrastructure/credent
 import { AuthSessionModel } from '../src/modules/identity/infrastructure/auth-session-model.js';
 import { PasswordService } from '../src/modules/identity/infrastructure/password-service.js';
 import { UserModel } from '../src/modules/identity/infrastructure/user-model.js';
+import { createMongoTestContainer, replicaSetConnectionString } from './mongodb-test-container.js';
 
 const origin = 'http://localhost:5173';
 const logger = pino({ level: 'error' });
@@ -43,15 +44,8 @@ function runningContainer(): StartedMongoDBContainer {
   return container;
 }
 
-function replicaSetConnectionString(startedContainer: StartedMongoDBContainer): string {
-  const connectionString = new URL(startedContainer.getConnectionString());
-  connectionString.searchParams.set('directConnection', 'true');
-  connectionString.searchParams.set('replicaSet', 'rs0');
-  return connectionString.toString();
-}
-
 beforeAll(async () => {
-  container = await new MongoDBContainer('mongo:8.0').start();
+  container = await createMongoTestContainer().start();
   const connectionString = replicaSetConnectionString(container);
   await mongoose.connect(connectionString, { dbName: 'onyx_auth_integration' });
   const environment = loadEnvironment({

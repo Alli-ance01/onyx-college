@@ -1,4 +1,4 @@
-import { MongoDBContainer, type StartedMongoDBContainer } from '@testcontainers/mongodb';
+import type { StartedMongoDBContainer } from '@testcontainers/mongodb';
 import mongoose from 'mongoose';
 import pino from 'pino';
 import request from 'supertest';
@@ -17,6 +17,7 @@ import { AuditLogModel } from '../src/modules/audit/infrastructure/audit-log-mod
 import { StudentDocumentModel } from '../src/modules/documents/infrastructure/document-models.js';
 import { StudentModel } from '../src/modules/students/infrastructure/student-models.js';
 import { SequenceCounterModel } from '../src/modules/system/infrastructure/system-models.js';
+import { createMongoTestContainer, replicaSetConnectionString } from './mongodb-test-container.js';
 
 const origin = 'http://localhost:5173';
 const logger = pino({ level: 'error' });
@@ -63,15 +64,8 @@ function authentication(response: request.Response): { accessToken: string; csrf
   return { accessToken: stringAt(data, 'accessToken'), csrfToken: stringAt(data, 'csrfToken') };
 }
 
-function replicaSetConnectionString(startedContainer: StartedMongoDBContainer): string {
-  const connectionString = new URL(startedContainer.getConnectionString());
-  connectionString.searchParams.set('directConnection', 'true');
-  connectionString.searchParams.set('replicaSet', 'rs0');
-  return connectionString.toString();
-}
-
 beforeAll(async () => {
-  container = await new MongoDBContainer('mongo:8.0').start();
+  container = await createMongoTestContainer().start();
   const connectionString = replicaSetConnectionString(container);
   await mongoose.connect(connectionString, {
     dbName: 'onyx_onboarding_integration',

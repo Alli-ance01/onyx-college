@@ -1,4 +1,4 @@
-import { MongoDBContainer, type StartedMongoDBContainer } from '@testcontainers/mongodb';
+import type { StartedMongoDBContainer } from '@testcontainers/mongodb';
 import mongoose from 'mongoose';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import {
@@ -15,6 +15,7 @@ import {
   SubjectOfferingModel,
 } from '../src/modules/subjects/infrastructure/subject-models.js';
 import { SubjectChangeRequestModel } from '../src/modules/subjects/infrastructure/subject-change-request-model.js';
+import { createMongoTestContainer, replicaSetConnectionString } from './mongodb-test-container.js';
 
 let container: StartedMongoDBContainer | undefined;
 const ids = {
@@ -31,11 +32,10 @@ const ids = {
 const subjects = new SubjectService();
 
 beforeAll(async () => {
-  container = await new MongoDBContainer('mongo:8.0').start();
-  const uri = new URL(container.getConnectionString());
-  uri.searchParams.set('directConnection', 'true');
-  uri.searchParams.set('replicaSet', 'rs0');
-  await mongoose.connect(uri.toString(), { dbName: 'onyx_subject_change_requests' });
+  container = await createMongoTestContainer().start();
+  await mongoose.connect(replicaSetConnectionString(container), {
+    dbName: 'onyx_subject_change_requests',
+  });
   await AcademicSessionModel.create({ _id: ids.session, label: '2026/2027', status: 'ACTIVE' });
   await ClassLevelModel.create({
     _id: ids.classLevel,
